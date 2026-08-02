@@ -1,0 +1,12 @@
+.env
+*.pyc
+__pycache__/
+.DS_Store
+*.log
+.claude/
+ref_only/
+ref_ui_only/
+skills/
+overview.md
+LOCAL.md
+RAILWAY.md
