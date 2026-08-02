@@ -3,668 +3,875 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Hermes Agent</title>
-<script>
-  (() => {
-    try {
-      const saved = localStorage.getItem('hermes-theme');
-      const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      document.documentElement.dataset.theme = saved || preferred;
-    } catch (_) {
-      document.documentElement.dataset.theme = 'dark';
-    }
-  })();
-</script>
+<title>Hermes Agent — Console</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d1117'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%23e8a24b'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23e8a24b' stroke-width='1.6' opacity='.55'/%3E%3Ccircle cx='16' cy='16' r='13.5' fill='none' stroke='%23e8a24b' stroke-width='1.3' opacity='.28'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-50..200&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-25..200&display=swap" rel="stylesheet">
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
-:root {
-  --ink:        #0b0e14;
-  --slate:      #12151d;
-  --slate-2:    #191d28;
-  --slate-3:    #202537;
-  --hairline:   #262b3b;
-  --text:       #e7e4da;
-  --text-dim:   #8991a6;
-  --gold:       #e3a53d;
-  --gold-2:     #f0c37a;
-  --gold-wash:  rgba(227,165,61,.12);
-  --teal:       #45c2a8;
-  --teal-wash:  rgba(69,194,168,.12);
-  --amber:      #d9a441;
-  --amber-wash: rgba(217,164,65,.12);
-  --coral:      #e2685f;
-  --coral-wash: rgba(226,104,95,.12);
-  --log-bg:     #080a0e;
-  --overlay:    rgba(6,8,12,.72);
-  --shadow:     rgba(0,0,0,.5);
-  --font-display: 'Space Grotesk', 'Inter', sans-serif;
-  --font-sans:    'Inter', ui-sans-serif, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
-  --sidebar-w:  232px;
-  --header-h:   58px;
-  --bottomnav-h: 64px;
-  --radius:     14px;
-  --radius-sm:  9px;
-  color-scheme: dark;
-}
+  /* ══════════════════════════════════════════════════════════════
+     DESIGN TOKENS
+     Concept: "signal console" — Hermes is a messenger/gateway, so the
+     visual language borrows from broadcast & transmission: a dark
+     operating surface, one warm signal-amber accent that stands for
+     "live", concentric ping rings on the connection indicator, and a
+     restrained teal for confirmed/healthy states. Avoids the default
+     indigo-SaaS and cream/terracotta looks.
+     ══════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:         #0a0e14;
+    --surface:    #10151d;
+    --surface-2:  #171d27;
+    --surface-3:  #1f2733;
+    --border:     #232b38;
+    --border-soft:#1a212c;
 
-:root[data-theme="light"] {
-  --ink:        #f5f3ee;
-  --slate:      #ffffff;
-  --slate-2:    #f0ede4;
-  --slate-3:    #e7e2d5;
-  --hairline:   #ddd6c4;
-  --text:       #262218;
-  --text-dim:   #736c5c;
-  --gold:       #b57a1e;
-  --gold-2:     #8f5f14;
-  --gold-wash:  rgba(181,122,30,.10);
-  --teal:       #1c8a76;
-  --teal-wash:  rgba(28,138,118,.09);
-  --amber:      #96691b;
-  --amber-wash: rgba(150,105,27,.09);
-  --coral:      #c34a41;
-  --coral-wash: rgba(195,74,65,.09);
-  --log-bg:     #ede9dd;
-  --overlay:    rgba(38,34,24,.35);
-  --shadow:     rgba(60,50,30,.14);
-  color-scheme: light;
-}
+    --text:       #e7ebf1;
+    --text-dim:   #8b93a3;
+    --text-faint: #545e6f;
 
-* , *::before, *::after { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  background: var(--ink);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-[x-cloak] { display: none !important; }
-a { color: var(--gold-2); }
-::selection { background: var(--gold-wash); color: var(--text); }
-::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-thumb { background: var(--slate-3); border-radius: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
+    --signal:     #e8a24b;   /* primary accent — "live" amber */
+    --signal-hi:  #f4b768;
+    --signal-wash:rgba(232,162,75,0.12);
 
-.icon {
-  font-family: 'Material Symbols Rounded';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 20px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  vertical-align: middle;
-  flex-shrink: 0;
-}
-.icon.sm { font-size: 16px; }
-.icon.lg { font-size: 26px; }
-.icon.fill { font-variation-settings: 'FILL' 1; }
+    --ok:         #34c99b;   /* healthy / running */
+    --ok-wash:    rgba(52,201,155,0.12);
+    --warn:       #e8a24b;   /* in progress */
+    --warn-wash:  rgba(232,162,75,0.12);
+    --bad:        #ef5b5b;   /* error */
+    --bad-wash:   rgba(239,91,91,0.12);
 
-/* ── Header ─────────────────────────────────────────────── */
-#header {
-  height: var(--header-h);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 18px;
-  background: linear-gradient(180deg, var(--slate), var(--slate) 70%, transparent);
-  border-bottom: 1px solid var(--hairline);
-  position: sticky;
-  top: 0;
-  z-index: 40;
-}
-.brand-mark {
-  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--gold), var(--gold-2));
-  display: grid; place-items: center;
-  box-shadow: 0 3px 10px var(--gold-wash);
-}
-.brand-mark .icon { color: #1a1206; font-size: 19px; }
-.logo {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: .01em;
-  white-space: nowrap;
-}
-.logo span { color: var(--text-dim); font-weight: 400; }
-.status-pill {
-  display: flex; align-items: center; gap: 7px;
-  padding: 5px 11px 5px 8px;
-  border: 1px solid var(--hairline);
-  border-radius: 100px;
-  background: var(--slate-2);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--text-dim);
-}
-.status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--text-dim);
-  box-shadow: 0 0 0 3px transparent;
-}
-.status-dot.running { background: var(--teal); animation: pulse-dot 2s ease-in-out infinite; }
-.status-dot.error, .status-dot.crashed { background: var(--coral); }
-.status-dot.starting, .status-dot.stopping { background: var(--amber); }
-@keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(69,194,168,.45); }
-  50%      { box-shadow: 0 0 0 4px rgba(69,194,168,0); }
-}
-.header-spacer { flex: 1; }
-.icon-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  height: 34px; padding: 0 12px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  background: var(--slate-2);
-  color: var(--text);
-  cursor: pointer;
-  font: 500 12px var(--font-sans);
-  transition: border-color .15s, background .15s, color .15s;
-}
-.icon-btn:hover { border-color: var(--gold); color: var(--gold-2); }
-.icon-btn.square { width: 34px; padding: 0; }
-.icon-btn .label { display: inline; }
-@media (max-width: 640px) { .icon-btn .label { display: none; } .icon-btn { width: 34px; padding: 0; } }
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
 
-/* ── Layout ─────────────────────────────────────────────── */
-#layout { display: flex; min-height: calc(100vh - var(--header-h)); }
+    --sidebar-w: 232px;
+    --sidebar-w-rail: 72px;
+    --header-h:  56px;
+    --radius:    10px;
+    --radius-sm: 7px;
+  }
 
-#sidebar {
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  border-right: 1px solid var(--hairline);
-  padding: 18px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  position: sticky;
-  top: var(--header-h);
-  height: calc(100vh - var(--header-h));
-}
-.nav-group-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .09em;
-  color: var(--text-dim);
-  padding: 10px 10px 6px;
-}
-.nav-item {
-  display: flex; align-items: center; gap: 11px;
-  padding: 9px 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--text-dim);
-  font-weight: 500;
-  font-size: 13px;
-  position: relative;
-  transition: background .15s, color .15s;
-}
-.nav-item:hover { background: var(--slate-2); color: var(--text); }
-.nav-item.active { background: var(--gold-wash); color: var(--gold-2); }
-.nav-item.active .icon { font-variation-settings: 'FILL' 1; }
-.nav-item.locked { opacity: .4; cursor: not-allowed; }
-.nav-item.locked:hover { background: none; color: var(--text-dim); }
-.nav-item.danger:hover { background: var(--coral-wash); color: var(--coral); }
-.nav-item.warning:hover { background: var(--amber-wash); color: var(--amber); }
-.nav-badge {
-  margin-left: auto;
-  min-width: 17px; height: 17px; padding: 0 5px;
-  border-radius: 100px;
-  background: var(--coral);
-  color: #fff;
-  font-size: 10px; font-weight: 700;
-  display: none; align-items: center; justify-content: center;
-  font-family: var(--font-mono);
-}
-.nav-badge.visible { display: flex; }
-.nav-divider { height: 1px; background: var(--hairline); margin: 10px 4px; }
-.sidebar-actions { display: flex; flex-direction: column; gap: 2px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-#main { flex: 1; min-width: 0; padding: 26px 32px 60px; }
+  .icon {
+    font-family: 'Material Symbols Rounded';
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    display: inline-block;
+    vertical-align: middle;
+    font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+  }
+  .icon.fill { font-variation-settings: 'FILL' 1, 'wght' 450, 'GRAD' 0, 'opsz' 24; }
 
-.panel { display: none; }
-.panel.active { display: block; animation: fade-up .25s ease; }
-@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
 
-.panel-header { margin-bottom: 22px; }
-.panel-title { font-family: var(--font-display); font-size: 23px; font-weight: 600; }
-.panel-subtitle { color: var(--text-dim); font-size: 13px; margin-top: 3px; }
+  [x-cloak] { display: none !important; }
+  a { color: inherit; }
 
-/* ── Cards & sections ───────────────────────────────────── */
-.section-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--text-dim);
-  margin: 22px 0 9px;
-  display: flex; align-items: center; gap: 8px;
-}
-.section-label:first-child { margin-top: 0; }
-.req-note { text-transform: none; letter-spacing: 0; font-family: var(--font-sans); color: var(--gold); font-size: 11.5px; }
+  ::selection { background: var(--signal-wash); color: var(--signal-hi); }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; border-radius: 4px; }
 
-.card {
-  background: var(--slate);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 14px;
-}
-.card-title { font-size: 13.5px; font-weight: 600; }
+  /* ── Header ───────────────────────────────────────── */
+  #header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 14px;
+    flex-shrink: 0;
+    z-index: 30;
+  }
 
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-.stat-card {
-  background: var(--slate);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  padding: 14px 15px;
-}
-.stat-label { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin-bottom: 7px; }
-.stat-value { font-family: var(--font-display); font-size: 21px; font-weight: 600; }
-.stat-value.green { color: var(--teal); }
-.stat-value.red { color: var(--coral); }
-.stat-value.yellow { color: var(--amber); }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+  }
+  .brand-mark {
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .brand-mark svg { width: 100%; height: 100%; display: block; }
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .brand-name span { color: var(--text-faint); font-weight: 500; }
 
-.empty-state {
-  padding: 26px 14px;
-  text-align: center;
-  color: var(--text-dim);
-  font-size: 13px;
-}
-.hint { color: var(--text-dim); font-size: 12px; line-height: 1.5; margin: 5px 0 0; }
+  .signal-pulse {
+    position: relative;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    flex-shrink: 0;
+    transition: background 0.25s;
+  }
+  .signal-pulse::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+  }
+  .signal-pulse.running { background: var(--ok); }
+  .signal-pulse.running::after { border-color: var(--ok); animation: ping 1.8s cubic-bezier(0,0,0.2,1) infinite; }
+  .signal-pulse.starting, .signal-pulse.stopping { background: var(--warn); }
+  .signal-pulse.starting::after, .signal-pulse.stopping::after { border-color: var(--warn); animation: ping 1s cubic-bezier(0,0,0.2,1) infinite; }
+  .signal-pulse.error, .signal-pulse.crashed { background: var(--bad); }
+  .signal-pulse.error::after, .signal-pulse.crashed::after { border-color: var(--bad); animation: ping 1s cubic-bezier(0,0,0.2,1) infinite; }
+  .signal-pulse.stopped { background: var(--text-faint); }
 
-/* ── Forms ──────────────────────────────────────────────── */
-.field-label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-}
-.field-gap { margin-top: 14px; }
-.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 720px) { .field-grid-2 { grid-template-columns: 1fr; } }
+  @keyframes ping {
+    0%   { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-input[type="text"], input[type="password"], select {
-  width: 100%;
-  padding: 9px 11px;
-  background: var(--ink);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font: 13px var(--font-sans);
-  outline: none;
-  transition: border-color .15s, box-shadow .15s;
-}
-input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-wash); }
-input::placeholder { color: var(--text-dim); }
-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238991a6'%3E%3Cpath d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
-code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+  #status-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: capitalize;
+  }
 
-/* ── Buttons ────────────────────────────────────────────── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 9px 15px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  background: var(--slate-2);
-  color: var(--text);
-  font: 600 12.5px var(--font-sans);
-  cursor: pointer;
-  transition: border-color .15s, background .15s, color .15s, opacity .15s;
-}
-.btn:hover { border-color: var(--gold); color: var(--gold-2); }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn:disabled:hover { border-color: var(--hairline); color: var(--text); }
-.btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1206; }
-.btn.primary:hover { background: var(--gold-2); border-color: var(--gold-2); color: #1a1206; }
-.btn.danger { border-color: var(--coral); color: var(--coral); }
-.btn.danger:hover { background: var(--coral-wash); }
-.btn.success { border-color: var(--teal); color: var(--teal); }
-.btn.success:hover { background: var(--teal-wash); }
-.btn.sm { padding: 6px 11px; font-size: 11.5px; }
+  .header-spacer { flex: 1; }
 
-/* ── Chips ──────────────────────────────────────────────── */
-.chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 9px;
-  border-radius: 100px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  background: var(--slate-2);
-  color: var(--text-dim);
-  border: 1px solid var(--hairline);
-}
-.chip.green { background: var(--teal-wash); color: var(--teal); border-color: transparent; }
-.chip.dim { color: var(--text-dim); }
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    height: 34px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .icon-btn:hover { border-color: var(--signal); color: var(--signal-hi); }
+  .icon-btn.square { width: 34px; padding: 0; }
+  .icon-btn .icon { font-size: 18px; }
 
-/* ── Toggle rows (channels/tools) ───────────────────────── */
-.toggle-row {
-  display: flex; align-items: center; gap: 11px;
-  padding: 13px 2px;
-  border-bottom: 1px solid var(--hairline);
-  cursor: pointer;
-}
-.toggle-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--gold); cursor: pointer; }
-.toggle-row .icon { color: var(--text-dim); }
-.toggle-label { font-weight: 500; font-size: 13.5px; }
-.toggle-body {
-  padding: 4px 2px 16px 30px;
-  border-bottom: 1px solid var(--hairline);
-}
+  .header-branding {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+  .header-branding a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+  }
+  .header-branding a:hover { color: var(--signal-hi); }
 
-/* ── Wizard ─────────────────────────────────────────────── */
-.wizard-steps { display: flex; gap: 8px; margin-bottom: 18px; }
-.wizard-step {
-  flex: 1;
-  padding: 9px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--hairline);
-  background: var(--slate);
-  color: var(--text-dim);
-  font: 600 11.5px var(--font-mono);
-  text-align: center;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-.wizard-step span { text-transform: none; font-family: var(--font-sans); letter-spacing: 0; }
-.wizard-step.active { border-color: var(--gold); color: var(--gold-2); background: var(--gold-wash); }
-.wizard-step.done { color: var(--teal); }
+  /* ── Layout ───────────────────────────────────────── */
+  #layout { display: flex; flex: 1; overflow: hidden; }
 
-.provider-guide {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  margin-top: 12px; padding: 11px 13px;
-  background: var(--slate-2); border-radius: var(--radius-sm);
-}
-.provider-guide a { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  /* ── Sidebar ──────────────────────────────────────── */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 14px 0;
+    overflow-y: auto;
+  }
 
-.model-picker { position: relative; margin-top: 6px; }
-.model-dropdown {
-  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0;
-  background: var(--slate); border: 1px solid var(--hairline); border-radius: var(--radius);
-  padding: 10px; box-shadow: 0 16px 40px var(--shadow);
-}
-.model-dropdown input { margin-bottom: 8px; }
-.model-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-.model-option {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 8px 9px; border-radius: 8px; border: none; background: none;
-  color: var(--text); text-align: left; cursor: pointer; font: 12.5px var(--font-mono);
-}
-.model-option:hover { background: var(--slate-2); }
-.model-option.selected { background: var(--gold-wash); color: var(--gold-2); }
-.model-context { font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
+  .nav-group-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 14px 18px 6px;
+  }
+  .nav-group-label:first-child { padding-top: 4px; }
 
-.test-result {
-  margin-top: 10px; padding: 9px 12px;
-  border: 1px solid var(--hairline); border-radius: var(--radius-sm);
-  font-size: 12px; line-height: 1.5;
-  background: var(--slate-2);
-}
-.test-result.ok  { border-color: var(--teal); color: var(--teal); background: var(--teal-wash); }
-.test-result.err { border-color: var(--coral); color: var(--coral); background: var(--coral-wash); }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 1px 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: background 0.15s, color 0.15s;
+    font-size: 13.5px;
+    font-weight: 500;
+    user-select: none;
+    position: relative;
+  }
+  .nav-item:hover  { color: var(--text); background: var(--surface-2); }
+  .nav-item.active { color: var(--text); background: var(--surface-3); }
+  .nav-item.active .nav-icon { color: var(--signal-hi); }
+  .nav-item.locked { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .nav-item.danger { color: #d97f7f; }
+  .nav-item.danger:hover { color: var(--bad); background: var(--bad-wash); }
 
-.diagnostic-row { display: flex; align-items: flex-start; gap: 11px; padding: 11px 2px; border-bottom: 1px solid var(--hairline); font-size: 13px; }
-.diagnostic-row:last-child { border-bottom: none; }
-.diagnostic-icon.ok { color: var(--teal); }
-.diagnostic-icon.warning { color: var(--amber); }
-.diagnostic-icon.error { color: var(--coral); }
+  .nav-item.highlight {
+    color: #14100a;
+    background: linear-gradient(135deg, var(--signal-hi), var(--signal));
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(232,162,75,0.22);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .nav-item.highlight:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(232,162,75,0.32); }
+  .nav-item.highlight .nav-icon { color: #14100a; }
+  .nav-item.highlight .nav-arrow {
+    margin-left: auto;
+    font-size: 17px;
+    transition: transform 0.15s;
+  }
+  .nav-item.highlight:hover .nav-arrow { transform: translateX(3px); }
 
-.save-bar {
-  position: sticky; bottom: 0;
-  display: flex; align-items: center; gap: 10px;
-  margin-top: 22px; padding: 14px 16px;
-  background: var(--slate);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 32px var(--shadow);
-}
-.save-bar > .btn:first-child:not(.primary) { margin-right: auto; }
+  .nav-icon { font-size: 19px; width: 20px; text-align: center; flex-shrink: 0; color: var(--text-faint); }
 
-.action-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--signal);
+    color: #14100a;
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    display: none;
+  }
+  .nav-badge.visible { display: inline-block; }
 
-/* ── Provider switch ────────────────────────────────────── */
-.provider-switch {
-  width: 38px; height: 21px; border-radius: 100px;
-  border: 1px solid var(--hairline); background: var(--slate-2);
-  position: relative; cursor: pointer; flex-shrink: 0;
-}
-.provider-switch::after {
-  content: ''; position: absolute; top: 2px; left: 2px;
-  width: 15px; height: 15px; border-radius: 50%; background: var(--text-dim);
-  transition: transform .15s, background .15s;
-}
-.provider-switch.on { background: var(--teal-wash); border-color: var(--teal); }
-.provider-switch.on::after { transform: translateX(17px); background: var(--teal); }
-.provider-switch:disabled { opacity: .4; cursor: not-allowed; }
+  .nav-divider { height: 1px; background: var(--border); margin: 10px 18px; }
 
-/* ── Logs ───────────────────────────────────────────────── */
-#log-view {
-  height: calc(100vh - var(--header-h) - 118px);
-  overflow-y: auto;
-  background: var(--log-bg);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-}
-.log-line {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.65;
-  color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+  .version-badge {
+    margin: 6px 12px 4px;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s;
+  }
+  .version-badge:hover { border-color: var(--signal); }
+  .version-badge-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .version-badge-label {
+    font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-faint);
+  }
+  .version-badge-value { font-family: var(--font-mono); font-size: 11.5px; color: var(--ok); }
+  .version-badge-hint { font-size: 10.5px; color: var(--text-faint); margin-top: 3px; }
+  .version-badge:hover .version-badge-hint { color: var(--signal-hi); }
 
-/* ── Users / pairing ────────────────────────────────────── */
-.pair-card {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 13px 15px; margin-bottom: 8px;
-  background: var(--slate); border: 1px solid var(--hairline); border-radius: var(--radius);
-}
-.pair-card.pending { border-left: 3px solid var(--amber); }
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th {
-  text-align: left; font-family: var(--font-mono); font-size: 10.5px;
-  text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim);
-  padding: 10px 14px; border-bottom: 1px solid var(--hairline);
-}
-.data-table td { padding: 11px 14px; border-bottom: 1px solid var(--hairline); font-size: 13px; }
-.data-table tr:last-child td { border-bottom: none; }
+  /* ── Main content ─────────────────────────────────── */
+  #main { flex: 1; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
 
-/* ── Modals ─────────────────────────────────────────────── */
-.modal-backdrop {
-  position: fixed; inset: 0; background: var(--overlay);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px; z-index: 100;
-}
-.modal {
-  width: min(440px, 100%);
-  background: var(--slate);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  padding: 22px;
-  box-shadow: 0 24px 70px var(--shadow);
-}
-.modal-close {
-  margin-left: auto; width: 30px; height: 30px; border-radius: 8px;
-  border: none; background: var(--slate-2); color: var(--text-dim);
-  display: grid; place-items: center; cursor: pointer;
-}
-.modal-close:hover { color: var(--text); }
+  .panel { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  .panel.active { display: flex; }
 
-.donate-modal { width: min(620px, 100%); }
-.donate-modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-.donate-modal-header .icon { color: var(--coral); }
-.donate-intro { color: var(--text-dim); font-size: 13px; line-height: 1.55; margin: 10px 0 18px; }
-.donate-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
-.donate-option {
-  background: var(--slate-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm);
-  padding: 14px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px;
-}
-.donate-option-icon { width: 34px; height: 34px; border-radius: 8px; overflow: hidden; background: #fff; display: grid; place-items: center; }
-.donate-option-icon img { width: 22px; height: 22px; object-fit: contain; }
-.donate-option-name { font-weight: 600; font-size: 13px; }
-.donate-option-copy { color: var(--text-dim); font-size: 11px; line-height: 1.4; }
-.donate-qr { width: 90px; height: 90px; border-radius: 8px; margin: 4px 0; background: #fff; padding: 4px; }
-.donate-open { width: 100%; margin-top: 2px; }
+  .panel-header {
+    padding: 18px 26px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .panel-subtitle { font-size: 12.5px; color: var(--text-faint); margin-left: auto; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 22px 26px 32px; }
 
-/* ── Toast ──────────────────────────────────────────────── */
-#toast {
-  display: none;
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  padding: 11px 18px;
-  background: var(--slate);
-  border: 1px solid var(--hairline);
-  border-radius: 100px;
-  font-size: 12.5px; font-weight: 500;
-  box-shadow: 0 12px 32px var(--shadow);
-  z-index: 200;
-  max-width: 90vw;
-}
-#toast.ok  { border-color: var(--teal); color: var(--teal); }
-#toast.err { border-color: var(--coral); color: var(--coral); }
+  /* ── Buttons ──────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+  }
+  .btn .icon { font-size: 17px; }
+  .btn:hover    { border-color: var(--text-dim); background: var(--surface-3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary  { background: linear-gradient(135deg, var(--signal-hi), var(--signal)); border-color: var(--signal); color: #14100a; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn.danger   { border-color: rgba(239,91,91,0.4); color: #f08787; background: transparent; }
+  .btn.danger:hover  { background: var(--bad); border-color: var(--bad); color: white; }
+  .btn.success  { border-color: rgba(52,201,155,0.4); color: var(--ok); background: transparent; }
+  .btn.success:hover { background: var(--ok); border-color: var(--ok); color: #0a1712; }
+  .btn.sm { padding: 6px 11px; font-size: 12px; }
+  .btn.sm .icon { font-size: 15px; }
 
-/* ── Bottom nav (mobile) ────────────────────────────────── */
-#bottom-nav {
-  display: none;
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: var(--bottomnav-h);
-  background: var(--slate);
-  border-top: 1px solid var(--hairline);
-  z-index: 60;
-  align-items: stretch;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.bn-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  color: var(--text-dim); font-size: 10px; font-weight: 600; position: relative;
-}
-.bn-item.active { color: var(--gold-2); }
-.bn-item.active .icon { font-variation-settings: 'FILL' 1; }
-.bn-item.locked { opacity: .4; }
-.bn-badge {
-  position: absolute; top: 4px; right: calc(50% - 20px);
-  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 100px;
-  background: var(--coral); color: #fff; font-size: 9px; font-weight: 700;
-  display: none; align-items: center; justify-content: center;
-}
-.bn-badge.visible { display: flex; }
+  /* ── Form ─────────────────────────────────────────── */
+  .field-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
 
-/* ── Responsive ─────────────────────────────────────────── */
-@media (max-width: 920px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 860px) {
-  #sidebar { display: none; }
-  #bottom-nav { display: flex; }
-  #main { padding: 18px 16px calc(var(--bottomnav-h) + 26px); }
-  #layout { display: block; }
-  div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
-}
-@media (max-width: 560px) {
-  .stat-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
-  .panel-title { font-size: 20px; }
-  #header { padding: 0 12px; gap: 8px; }
-  .logo span { display: none; }
-  .save-bar { flex-wrap: wrap; }
-}
+  input[type=text], input[type=password], select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 9px 11px;
+    font-size: 13.5px;
+    font-family: var(--font-mono);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type=text]:focus, input[type=password]:focus, select:focus {
+    border-color: var(--signal);
+    box-shadow: 0 0 0 3px var(--signal-wash);
+  }
+  input::placeholder { color: var(--text-faint); }
+  input[type=checkbox] {
+    appearance: none;
+    width: 17px; height: 17px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg);
+    cursor: pointer;
+    flex-shrink: 0;
+    display: inline-grid;
+    place-content: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input[type=checkbox]:checked {
+    background: linear-gradient(135deg, var(--signal-hi), var(--signal));
+    border-color: var(--signal);
+  }
+  input[type=checkbox]:checked::after {
+    content: '';
+    width: 5px; height: 9px;
+    border: solid #14100a;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px,-1px);
+  }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b93a3' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  select option { background: var(--surface-2); }
+
+  /* ── Cards ────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 22px 0 10px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label:first-child { margin-top: 0; }
+  .section-label .req-note { color: var(--signal-hi); font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+
+  .callout {
+    background: var(--signal-wash);
+    border: 1px solid rgba(232,162,75,0.25);
+    border-radius: var(--radius);
+    padding: 12px 15px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    display: flex;
+    gap: 10px;
+  }
+  .callout .icon { color: var(--signal-hi); font-size: 19px; flex-shrink: 0; margin-top: 1px; }
+  .callout a { color: var(--signal-hi); text-decoration: none; font-weight: 600; }
+  .callout a:hover { text-decoration: underline; }
+
+  .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Channel / tool toggles ───────────────────────── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--border-soft);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .toggle-icon-wrap {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .toggle-icon-wrap .icon { font-size: 17px; }
+
+  .toggle-body { padding: 4px 2px 16px 42px; border-bottom: 1px solid var(--border-soft); }
+  .toggle-body:last-child { border-bottom: none; }
+
+  /* ── Stat grid ────────────────────────────────────── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
+  .stat-value { font-family: var(--font-display); font-size: 21px; font-weight: 600; color: var(--text); text-transform: capitalize; }
+  .stat-value.green  { color: var(--ok); }
+  .stat-value.red    { color: var(--bad); }
+  .stat-value.yellow { color: var(--warn); }
+
+  /* ── Action row ───────────────────────────────────── */
+  .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+
+  /* ── Logs ─────────────────────────────────────────── */
+  #log-view {
+    flex: 1;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    padding: 14px 20px;
+    background: #070a0f;
+  }
+  .log-line { padding: 1px 0; color: var(--text-dim); word-break: break-all; white-space: pre-wrap; }
+
+  /* ── Chips ────────────────────────────────────────── */
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .chip .icon { font-size: 13px; }
+  .chip.green { background: var(--ok-wash);  color: var(--ok); }
+  .chip.dim   { background: var(--surface-2); color: var(--text-faint); }
+
+  /* ── Table ────────────────────────────────────────── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left; padding: 10px 14px; font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); border-bottom: 1px solid var(--border);
+  }
+  .data-table td { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface-2); }
+
+  /* ── Pair cards ───────────────────────────────────── */
+  .pair-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
+  .pair-card.pending { border-color: rgba(232,162,75,0.4); }
+
+  /* ── Save bar ─────────────────────────────────────── */
+  .save-bar {
+    padding: 14px 26px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+  .save-bar-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-dim); cursor: pointer; }
+
+  /* ── Backup drop zone ─────────────────────────────── */
+  .dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 26px 16px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .dropzone:hover, .dropzone:focus-within { border-color: var(--signal); }
+  .dropzone.dragging { border-color: var(--signal); border-style: solid; background: var(--signal-wash); }
+  .dropzone-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .dropzone-icon { font-size: 26px; color: var(--text-faint); margin-bottom: 8px; }
+  .dropzone-main { font-size: 13.5px; color: var(--text); }
+  .dropzone-link { color: var(--signal-hi); text-decoration: underline; font-weight: 600; }
+  .dropzone-file { font-family: var(--font-mono); font-size: 12.5px; color: var(--ok); word-break: break-all; }
+  .dropzone-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 6px; }
+
+  .restore-result {
+    display: flex; align-items: flex-start; gap: 10px; margin-top: 14px;
+    padding: 11px 14px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.5;
+    animation: slideIn 0.2s ease;
+  }
+  .restore-result .icon { font-size: 18px; flex-shrink: 0; }
+  .restore-result.ok   { background: var(--ok-wash);  border: 1px solid rgba(52,201,155,0.35);  color: var(--ok); }
+  .restore-result.warn { background: var(--warn-wash); border: 1px solid rgba(232,162,75,0.35); color: var(--warn); }
+  .restore-result.err  { background: var(--bad-wash);  border: 1px solid rgba(239,91,91,0.35);  color: var(--bad); }
+
+  /* ── Toast ────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; align-items: center; gap: 9px;
+    padding: 12px 18px; border-radius: var(--radius);
+    font-size: 13.5px; font-weight: 500;
+    background: var(--surface-3); border: 1px solid var(--border); color: var(--text);
+    display: none; z-index: 999; max-width: 360px;
+    animation: slideIn 0.2s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  #toast.ok  { border-color: rgba(52,201,155,0.4); }
+  #toast.ok::before { content: 'check_circle'; font-family:'Material Symbols Rounded'; color: var(--ok); font-size:18px; }
+  #toast.err { border-color: rgba(239,91,91,0.4); }
+  #toast.err::before { content: 'error'; font-family:'Material Symbols Rounded'; color: var(--bad); font-size:18px; }
+
+  /* ── Misc ─────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+  .empty-state { color: var(--text-faint); font-size: 13px; padding: 36px 0; text-align: center; }
+  .hint { font-size: 12px; color: var(--text-faint); margin-top: 7px; line-height: 1.5; }
+  code { font-family: var(--font-mono); color: var(--signal-hi); font-size: 0.95em; }
+  .field-gap { margin-top: 13px; }
+
+  /* ── Guide steps ─────────────────────────────────── */
+  .guide-section { margin-bottom: 30px; }
+  .guide-section-title {
+    font-family: var(--font-display);
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .guide-section-title .guide-num {
+    background: linear-gradient(135deg, var(--signal-hi), var(--signal));
+    color: #14100a;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-list { list-style: none; padding: 0; counter-reset: step; }
+  .step-list li {
+    position: relative;
+    padding: 10px 0 10px 38px;
+    border-left: 2px solid var(--border);
+    margin-left: 12px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .step-list li:last-child { border-left-color: transparent; }
+  .step-list li::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: -9px; top: 10px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-list li a { color: var(--signal-hi); text-decoration: none; font-weight: 600; }
+  .step-list li a:hover { text-decoration: underline; }
+  .step-list .step-note { display: block; font-size: 12.5px; color: var(--text-faint); margin-top: 5px; }
+
+  /* ── Template cards ──────────────────────────────── */
+  .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .template-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; transition: border-color 0.15s, transform 0.15s;
+  }
+  .template-card:hover { border-color: var(--signal); transform: translateY(-1px); }
+  .template-card-icon {
+    width: 38px; height: 38px; border-radius: 10px; background: var(--surface-2);
+    display: inline-flex; align-items: center; justify-content: center; color: var(--signal-hi);
+    margin-bottom: 12px;
+  }
+  .template-card-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .template-card-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; margin-bottom: 16px; }
+
+  /* ── Changelog ────────────────────────────────────── */
+  .changelog-entry { position: relative; padding: 0 0 28px 22px; border-left: 1px solid var(--border); }
+  .changelog-entry:last-child { padding-bottom: 4px; border-left-color: transparent; }
+  .changelog-entry::before {
+    content: ''; position: absolute; left: -5.5px; top: 4px;
+    width: 10px; height: 10px; border-radius: 50%; box-sizing: border-box;
+  }
+  .changelog-entry.major::before { background: var(--signal); border: 2px solid var(--signal); box-shadow: 0 0 0 3px var(--signal-wash); }
+  .changelog-entry.minor::before { background: var(--surface); border: 2px solid var(--text-faint); }
+  .changelog-entry .changelog-group, .changelog-entry .changelog-list { margin-left: 13px; }
+  .changelog-date { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--signal-hi); margin-bottom: 11px; }
+  .changelog-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 14px; }
+  .meta-box { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 11px; }
+  .meta-label { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+  .meta-box code { font-size: 11.5px; color: var(--text); }
+  .meta-box.version code { color: var(--ok); }
+  .changelog-group {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-faint); margin: 18px 0 9px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .changelog-entry .changelog-group:first-of-type { margin-top: 4px; }
+  .changelog-list { list-style: none; padding: 0; margin: 0; }
+  .changelog-list li { position: relative; padding-left: 17px; font-size: 13px; line-height: 1.65; color: var(--text-dim); margin-bottom: 9px; }
+  .changelog-list li:last-child { margin-bottom: 0; }
+  .changelog-list li::before { content: ''; position: absolute; left: 0; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--signal); }
+  .changelog-list li strong { color: var(--text); }
+  .changelog-list li a { color: var(--signal-hi); }
+
+  /* ── Mobile menu toggle ───────────────────────────── */
+  .menu-toggle {
+    display: none;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    width: 36px; height: 34px; border-radius: var(--radius-sm);
+    cursor: pointer; flex-shrink: 0; align-items: center; justify-content: center; padding: 0;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .menu-toggle:hover { border-color: var(--signal); color: var(--signal-hi); }
+  .menu-toggle .icon { font-size: 21px; }
+
+  #sidebar-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(4,6,10,0.6);
+    z-index: 40; animation: fadeIn 0.15s ease; backdrop-filter: blur(1px);
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ── Responsive: tablet & below ───────────────────── */
+  @media (max-width: 860px) {
+    #sidebar {
+      position: fixed; top: var(--header-h); left: 0; bottom: 0;
+      width: 270px; max-width: 84vw; z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 0.22s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.45);
+    }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-overlay.open { display: block; }
+    .menu-toggle { display: inline-flex; }
+    .header-branding { display: none; }
+    #header { padding: 0 12px; gap: 10px; }
+    .brand-name { font-size: 15px; }
+    .save-bar { flex-direction: column; align-items: stretch; padding: 12px 16px; }
+    .save-bar > div { justify-content: stretch; }
+    .save-bar .btn { flex: 1; }
+    .field-grid-2 { grid-template-columns: 1fr; }
+    .panel-header { padding: 14px 16px 10px; }
+    .panel-body { padding: 16px 16px 26px; }
+  }
+
+  /* ── Responsive: phones ───────────────────────────── */
+  @media (max-width: 560px) {
+    :root { --header-h: 52px; }
+    #status-label { display: none; }
+    .status-split { grid-template-columns: 1fr !important; }
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card { padding: 14px; }
+    .stat-value { font-size: 18px; }
+    .action-row .btn { flex: 1 1 calc(50% - 5px); }
+    .template-grid { grid-template-columns: 1fr; }
+    .panel-subtitle { display: none; }
+    .pair-card { flex-wrap: wrap; }
+    #toast { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  }
 </style>
 </head>
-<body x-data="app()" x-init="init()" @keydown.escape.window="donateModal=false" x-cloak>
+<body x-data="app()" x-init="init()" x-cloak>
 
 <!-- Header -->
 <div id="header">
-  <div class="brand-mark"><span class="icon fill">bolt</span></div>
-  <div class="logo">hermes<span>/admin</span></div>
-  <div class="status-pill">
-    <div class="status-dot" :class="gw.state||'stopped'"></div>
-    <span x-text="gw.state||'stopped'"></span>
+  <button class="menu-toggle" @click="menuOpen = !menuOpen" aria-label="Toggle navigation menu">
+    <span class="icon">menu</span>
+  </button>
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#171d27"/>
+        <circle cx="16" cy="16" r="4.2" fill="#e8a24b"/>
+        <circle cx="16" cy="16" r="9" stroke="#e8a24b" stroke-width="1.6" opacity="0.55"/>
+        <circle cx="16" cy="16" r="13.5" stroke="#e8a24b" stroke-width="1.3" opacity="0.28"/>
+      </svg>
+    </div>
+    <div class="brand-name">hermes<span>/console</span></div>
+  </div>
+  <div class="signal-pulse" :class="gw.state||'stopped'"></div>
+  <div id="status-label" x-text="gw.state||'stopped'"></div>
+  <div class="header-spacer"></div>
+  <div class="header-branding">
+    <span>made by</span>
+    <a href="https://github.com/praveen-ks-2001" target="_blank" rel="noopener">Heimdall</a>
   </div>
   <div class="header-spacer"></div>
+  <a class="icon-btn square" href="https://github.com/praveen-ks-2001/hermes-agent-template/issues" target="_blank" rel="noopener" title="Report an issue">
+    <span class="icon">bug_report</span>
+  </a>
   <button class="icon-btn" @click="restartGateway()">
-    <span class="icon sm">restart_alt</span><span class="label">Restart</span>
-  </button>
-  <button class="icon-btn" @click="donateModal=true" aria-label="Support this project">
-    <span class="icon sm">volunteer_activism</span><span class="label">Donate</span>
-  </button>
-  <button class="icon-btn square"
-          type="button"
-          @click="toggleTheme()"
-          :title="theme === 'dark' ? 'Use light mode' : 'Use dark mode'"
-          :aria-label="theme === 'dark' ? 'Use light mode' : 'Use dark mode'">
-    <span class="icon" x-text="theme === 'dark' ? 'light_mode' : 'dark_mode'"></span>
+    <span class="icon">refresh</span>
+    <span>Restart</span>
   </button>
 </div>
 
 <!-- Layout -->
 <div id="layout">
 
-  <!-- Sidebar (desktop) -->
-  <nav id="sidebar">
+  <div id="sidebar-overlay" :class="{open: menuOpen}" @click="menuOpen = false"></div>
+
+  <nav id="sidebar" :class="{open: menuOpen}" @click="menuOpen = false">
 
     <div class="nav-group-label">Setup</div>
-    <div class="nav-item" :class="{active: page==='setup'}" @click="openSetup()">
-      <span class="icon">rocket_launch</span>
+    <div class="nav-item" :class="{active: page==='setup'}" @click="page='setup'">
+      <span class="icon nav-icon">tune</span>
       <span>Setup</span>
     </div>
 
-    <div class="nav-group-label" style="margin-top:8px">Monitor</div>
-    <div class="nav-item"
-         :class="{active: page==='status', locked: !isSetupDone}"
-         @click="isSetupDone && (page='status')">
-      <span class="icon">monitor_heart</span>
+    <div class="nav-group-label">Dashboard</div>
+    <div class="nav-item highlight"
+         @click="window.location.href='/?force=1'"
+         title="Open the native Hermes dashboard — providers, skills, analytics, sessions">
+      <span class="icon nav-icon">hub</span>
+      <span>Hermes Dashboard</span>
+      <span class="icon nav-arrow">arrow_forward</span>
+    </div>
+
+    <div class="nav-group-label">Monitor</div>
+    <div class="nav-item" :class="{active: page==='status', locked: !isSetupDone}" @click="isSetupDone && (page='status')">
+      <span class="icon nav-icon">monitor_heart</span>
       <span>Status</span>
     </div>
-    <div class="nav-item"
-         :class="{active: page==='logs', locked: !isSetupDone}"
-         @click="isSetupDone && (page='logs')">
-      <span class="icon">terminal</span>
+    <div class="nav-item" :class="{active: page==='logs', locked: !isSetupDone}" @click="isSetupDone && (page='logs')">
+      <span class="icon nav-icon">terminal</span>
       <span>Logs</span>
     </div>
 
-    <div class="nav-group-label" style="margin-top:8px">Manage</div>
-    <div class="nav-item"
-         :class="{active: page==='users'}"
-         @click="page='users'">
-      <span class="icon">group</span>
+    <div class="nav-group-label">Manage</div>
+    <div class="nav-item" :class="{active: page==='users', locked: !isSetupDone}" @click="isSetupDone && (page='users')">
+      <span class="icon nav-icon">group</span>
       <span>Users</span>
       <span class="nav-badge" :class="{visible: pendingCount>0}" x-text="pendingCount"></span>
     </div>
 
-    <div class="nav-divider" style="margin-top:auto;"></div>
+    <div class="nav-group-label">Resources</div>
+    <div class="nav-item" :class="{active: page==='guide'}" @click="page='guide'">
+      <span class="icon nav-icon">menu_book</span>
+      <span>How to Setup</span>
+    </div>
+    <div class="nav-item" :class="{active: page==='templates'}" @click="page='templates'">
+      <span class="icon nav-icon">rocket_launch</span>
+      <span>Other Templates</span>
+    </div>
+    <div class="nav-item" :class="{active: page==='changelog'}" @click="page='changelog'">
+      <span class="icon nav-icon">campaign</span>
+      <span>What's New</span>
+    </div>
 
-    <div class="sidebar-actions">
-      <div class="nav-item danger" @click="resetConfig()" title="Reset Config">
-        <span class="icon">delete_sweep</span>
-        <span>Reset</span>
+    <div class="nav-group-label">Data</div>
+    <div class="nav-item" :class="{active: page==='backup'}" @click="page='backup'">
+      <span class="icon nav-icon">sync_alt</span>
+      <span>Backup &amp; Restore</span>
+    </div>
+
+    <div class="version-badge" style="margin-top:auto;" @click="page='changelog'"
+         :title="'This template is built and tested against Hermes ' + (hermesVersion || 'unknown') + '. Click to see what changed and how to pin an older version.'">
+      <div class="version-badge-top">
+        <span class="version-badge-label">Hermes</span>
+        <span class="version-badge-value" x-text="hermesVersion || '—'"></span>
       </div>
-      <div class="nav-item warning" @click="logout()" title="Logout">
-        <span class="icon">logout</span>
-        <span>Logout</span>
-      </div>
+      <div class="version-badge-hint">What's new &amp; older versions →</div>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-item danger" @click="resetConfig()">
+      <span class="icon nav-icon">restart_alt</span>
+      <span>Reset Config</span>
+    </div>
+
+    <div class="nav-item" @click="window.location.href='/logout'">
+      <span class="icon nav-icon">logout</span>
+      <span>Sign out</span>
     </div>
 
   </nav>
@@ -680,85 +887,25 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
       </div>
       <div class="panel-body">
 
-        <div x-show="setupMode==='summary' && isSetupDone">
-          <div class="section-label">Current Configuration</div>
-          <div class="stat-grid">
-            <div class="stat-card">
-              <div class="stat-label">Active Provider</div>
-              <div class="stat-value" style="font-size:14px;" x-text="activeProviderName||'—'"></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Model</div>
-              <div class="stat-value" style="font-size:12px;word-break:break-all;" x-text="vars.LLM_MODEL||'—'"></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Channels</div>
-              <div class="stat-value" style="font-size:14px;" x-text="enabledChannelNames.length?enabledChannelNames.join(', '):'—'"></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Providers Saved</div>
-              <div class="stat-value" x-text="configuredProviderCount"></div>
-            </div>
-          </div>
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-              <div>
-                <div class="card-title" style="margin-bottom:4px;">Hermes is already configured</div>
-                <p class="hint" style="margin-top:0;">Saved credentials remain hidden until you explicitly edit the configuration.</p>
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                <button class="btn primary" @click="beginAddProvider()"><span class="icon sm">add</span>Add Provider</button>
-                <button class="btn primary" @click="beginAddChannel()"><span class="icon sm">add</span>Add Channel</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-label" style="margin-top:20px;">Manage Providers</div>
-          <div class="card" style="padding:0;overflow:hidden;">
-            <template x-for="(info,name) in status.providers||{}" :key="name">
-              <div x-show="info.key_set" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--hairline);">
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:13px;font-weight:500;" x-text="name"></div>
-                  <div class="hint" style="margin-top:2px;" x-text="info.configured ? info.model : 'API key only · model not registered'"></div>
-                </div>
-                <span class="chip" :class="info.active?'green':'dim'" x-text="info.active?'active':info.configured?'ready':'key only'"></span>
-                <button class="btn sm danger" :disabled="info.active"
-                        :title="info.active?'Switch provider before removing it':'Remove provider'"
-                        @click="requestManagedRemoval('provider',name)">Remove</button>
-              </div>
-            </template>
-            <div class="empty-state" x-show="managedProviderCount===0">No saved providers.</div>
-          </div>
-
-          <div class="section-label" style="margin-top:20px;">Manage Channels</div>
-          <div class="card" style="padding:0;overflow:hidden;">
-            <template x-for="(info,name) in status.channels||{}" :key="name">
-              <div x-show="info.configured" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--hairline);">
-                <div style="flex:1;font-size:13px;font-weight:500;" x-text="name"></div>
-                <span class="chip green">configured</span>
-                <button class="btn sm danger" :disabled="configuredChannelCount<=1"
-                        :title="configuredChannelCount<=1?'Add another channel before removing the last one':'Remove channel'"
-                        @click="requestManagedRemoval('channel',name)">Remove</button>
-              </div>
-            </template>
-            <div class="empty-state" x-show="configuredChannelCount===0">No configured channels.</div>
-          </div>
+        <div class="callout">
+          <span class="icon">info</span>
+          <span>New to Hermes? Head over to the <a href="#" @click.prevent="page='guide'">How to Setup</a> section for a step-by-step guide on getting started.</span>
         </div>
 
-        <div x-show="setupMode!=='summary' || !isSetupDone">
-        <div class="wizard-steps" x-show="setupMode==='initial'">
-          <button class="wizard-step" :class="{active:wizardStep===1,done:wizardStep>1}" @click="wizardStep=1">1 · <span>Provider</span></button>
-          <button class="wizard-step" :class="{active:wizardStep===2,done:wizardStep>2}" @click="goWizardStep(2)">2 · <span>Channels</span></button>
-          <button class="wizard-step" :class="{active:wizardStep===3}" @click="goWizardStep(3)">3 · <span>Review</span></button>
-        </div>
-
-        <div x-show="setupMode==='provider' || (setupMode==='initial' && wizardStep===1)">
         <!-- LLM Provider -->
         <div class="section-label">
+          <span class="icon" style="font-size:14px;">smart_toy</span>
           LLM Provider
           <span class="req-note">* required</span>
         </div>
         <div class="card">
+          <p class="hint" style="margin:0 0 14px;">
+            Select a provider, paste its key and enter a model, then click <strong style="color:var(--text);">Save &amp; Start</strong>.
+            You can add multiple providers — each saves alongside the others.
+            Configured providers appear in the list below with a Remove button.
+            Every provider Hermes supports is also manageable from the
+            <a href="/?force=1" style="color:var(--signal-hi);font-weight:600;">Hermes Dashboard</a> → <strong style="color:var(--text);">Keys</strong> tab.
+          </p>
           <div>
             <label class="field-label">Provider</label>
             <select x-model="selectedProvider" @change="onProviderChange()">
@@ -769,89 +916,172 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </select>
           </div>
 
-          <div class="field-gap" x-show="selectedProvider">
-            <label class="field-label">API Key</label>
+          <template x-if="selectedProvider === 'Custom Endpoint'">
+            <div>
+              <div class="field-gap">
+                <label class="field-label">Provider Name <span style="color:var(--text-faint);font-weight:400;text-transform:none;">(optional label)</span></label>
+                <input type="text" :value="vars.CUSTOM_PROVIDER_NAME||''" @input="vars.CUSTOM_PROVIDER_NAME=$event.target.value"
+                       placeholder="e.g. Groq, Together, Perplexity">
+              </div>
+              <div class="field-gap">
+                <label class="field-label">Base URL</label>
+                <input type="text" :value="vars.CUSTOM_PROVIDER_BASE_URL||''" @input="vars.CUSTOM_PROVIDER_BASE_URL=$event.target.value"
+                       placeholder="https://api.groq.com/openai/v1">
+                <p class="hint">Any OpenAI-compatible endpoint. For more providers configure additional ones from the <a href="/?force=1" style="color:var(--signal-hi);">Hermes Dashboard</a> → Keys tab.</p>
+              </div>
+            </div>
+          </template>
+
+          <div class="field-gap" x-show="selectedProvider && providerMap[selectedProvider]?.key">
+            <label class="field-label" x-text="providerMap[selectedProvider]?.keyLabel || 'API Key'"></label>
             <input type="password"
                    :value="selectedProvider ? (vars[providerMap[selectedProvider]?.key]||'') : ''"
-                   @input="if(selectedProvider) vars[providerMap[selectedProvider].key]=$event.target.value"
+                   @input="if(selectedProvider && providerMap[selectedProvider]?.key) vars[providerMap[selectedProvider].key]=$event.target.value"
                    :placeholder="selectedProvider ? (providerMap[selectedProvider]?.placeholder||'Paste your API key') : ''">
           </div>
 
-          <div class="provider-guide" x-show="selectedProvider">
+          <template x-if="selectedProvider === 'AWS Bedrock'">
             <div>
-              <div style="font-size:13px;font-weight:500;" x-text="'Get a '+selectedProvider+' API key'"></div>
-              <p class="hint" style="margin-top:3px;" x-text="providerMap[selectedProvider]?.guide"></p>
+              <div class="field-gap">
+                <label class="field-label">AWS Secret Access Key</label>
+                <input type="password" :value="vars.AWS_SECRET_ACCESS_KEY||''" @input="vars.AWS_SECRET_ACCESS_KEY=$event.target.value"
+                       placeholder="wJalr...">
+              </div>
+              <div class="field-gap">
+                <label class="field-label">AWS Region</label>
+                <input type="text" :value="vars.AWS_DEFAULT_REGION||''" @input="vars.AWS_DEFAULT_REGION=$event.target.value"
+                       placeholder="us-east-1">
+                <p class="hint">Region where your Bedrock models are enabled (e.g. <code>us-east-1</code>, <code>us-west-2</code>, <code>eu-west-1</code>).</p>
+              </div>
             </div>
-            <a :href="providerMap[selectedProvider]?.keyUrl" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:4px;">
-              Open official page <span class="icon sm">open_in_new</span>
-            </a>
-          </div>
+          </template>
+
+          <template x-if="selectedProvider === 'Azure Foundry'">
+            <div>
+              <div class="field-gap">
+                <label class="field-label">Endpoint URL</label>
+                <input type="text" :value="vars.AZURE_FOUNDRY_BASE_URL||''" @input="vars.AZURE_FOUNDRY_BASE_URL=$event.target.value"
+                       placeholder="https://your-resource.services.ai.azure.com/models">
+                <p class="hint">Your Azure AI Foundry endpoint URL — required.</p>
+              </div>
+            </div>
+          </template>
 
           <div class="field-gap" x-show="selectedProvider">
             <label class="field-label">LLM Model</label>
-            <div class="model-picker" @click.outside="modelDropdownOpen=false">
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input type="text"
-                       :value="vars.LLM_MODEL||''" @input="updateProviderModel($event.target.value)"
-                       @click="availableModels.length && (modelDropdownOpen=true)"
-                       @keydown.escape="modelDropdownOpen=false"
-                       :placeholder="providerMap[selectedProvider]?.modelExample||'Enter a model name'">
-                <button class="btn" style="white-space:nowrap;" @click="loadProviderModels()"
-                        :disabled="loadingModels || !selectedProvider || !vars[providerMap[selectedProvider]?.key]"
-                        x-text="loadingModels?'Loading…':'Load Models'"></button>
-              </div>
-              <div class="model-dropdown" x-show="modelDropdownOpen && availableModels.length" x-transition>
-                <input type="text" x-model="modelFilter" @keydown.escape="modelDropdownOpen=false"
-                       placeholder="Search loaded models…" aria-label="Search models">
-                <div class="hint" x-text="filteredModels.length+' of '+availableModels.length+' models'"></div>
-                <div class="model-list">
-                  <template x-for="model in filteredModels" :key="model.id">
-                    <button type="button" class="model-option"
-                            :class="{selected:vars.LLM_MODEL===model.id}" @click="selectModel(model.id)">
-                      <span>
-                        <span x-text="model.id"></span>
-                        <span x-show="model.name && model.name!==model.id"
-                              style="display:block;color:var(--text-dim);font-size:10px;margin-top:2px;"
-                              x-text="model.name"></span>
-                      </span>
-                      <span class="model-context" x-show="model.context_length"
-                            x-text="Number(model.context_length).toLocaleString()+' ctx'"></span>
-                    </button>
-                  </template>
-                  <div class="empty-state" style="padding:18px 0;" x-show="filteredModels.length===0">No matching models.</div>
-                </div>
-              </div>
+            <input type="text" :value="vars.LLM_MODEL||''" @input="vars.LLM_MODEL=$event.target.value"
+                   :placeholder="selectedProvider === 'xAI Grok (SuperGrok)' || selectedProvider === 'xAI' ? 'e.g. grok-4.3'
+                     : selectedProvider === 'Anthropic (Claude)' ? 'e.g. claude-sonnet-4-20250514'
+                     : selectedProvider === 'AWS Bedrock' ? 'e.g. anthropic.claude-3-5-sonnet-20241022-v2:0'
+                     : selectedProvider === 'Fireworks AI' ? 'e.g. accounts/fireworks/models/llama-v3p1-70b-instruct'
+                     : selectedProvider === 'MiniMax' || selectedProvider === 'MiniMax (China)' ? 'e.g. MiniMax-M3'
+                     : selectedProvider === 'Custom Endpoint' || selectedProvider === 'Azure Foundry' ? 'model-id as required by the endpoint'
+                     : 'e.g. openai/gpt-4o-mini  or  deepseek/deepseek-chat'">
+            <p class="hint" x-show="selectedProvider === 'xAI Grok (SuperGrok)' || selectedProvider === 'xAI'">e.g. <code>grok-4.3</code>, <code>grok-4.20-0309-reasoning</code></p>
+            <p class="hint" x-show="selectedProvider === 'Anthropic (Claude)'">e.g. <code>claude-sonnet-4-20250514</code>, <code>claude-opus-4-20250115</code></p>
+            <p class="hint" x-show="selectedProvider === 'AWS Bedrock'">e.g. <code>anthropic.claude-3-5-sonnet-20241022-v2:0</code>, <code>us.meta.llama3-2-90b-instruct-v1:0</code></p>
+            <p class="hint" x-show="selectedProvider === 'Fireworks AI'">Format: <code>accounts/fireworks/models/&lt;model-id&gt;</code></p>
+            <p class="hint" x-show="selectedProvider === 'MiniMax' || selectedProvider === 'MiniMax (China)'">e.g. <code>MiniMax-M3</code>, <code>MiniMax-M2.7</code></p>
+            <p class="hint" x-show="!['xAI Grok (SuperGrok)','xAI','Anthropic (Claude)','AWS Bedrock','Fireworks AI','MiniMax','MiniMax (China)','Custom Endpoint','Azure Foundry'].includes(selectedProvider) && selectedProvider">Check your provider's docs for model names. OpenRouter format: <code>provider/model-name</code></p>
+          </div>
+        </div>
+
+        <!-- xAI Grok SuperGrok OAuth -->
+        <div class="card" x-show="selectedProvider === 'xAI Grok (SuperGrok)'" style="border-left:3px solid var(--signal);">
+          <p style="margin:0 0 12px;font-size:13.5px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+            <span class="icon" style="font-size:18px;color:var(--signal-hi);">bolt</span>
+            xAI Grok — SuperGrok OAuth
+          </p>
+
+          <template x-if="xai.status === 'none'">
+            <div>
+              <p class="hint" style="margin:0 0 12px;">Connect your SuperGrok subscription. Click below — a new tab will open where you enter a short code to authorise this deployment. No API key needed; tokens auto-refresh.</p>
+              <button class="btn primary" style="width:100%;" @click="startXaiOauth()" :disabled="xai.loading">
+                <span x-show="!xai.loading">Connect SuperGrok</span>
+                <span x-show="xai.loading">Starting…</span>
+              </button>
+              <p x-show="xai.error" x-text="xai.error" style="color:var(--bad);margin:10px 0 0;font-size:12.5px;"></p>
             </div>
-            <p class="hint" x-text="providerMap[selectedProvider]?.modelHint"></p>
-            <div class="test-result" x-show="modelLoadMessage"
-                 :class="availableModels.length?'ok':'err'" x-text="modelLoadMessage"></div>
-          </div>
+          </template>
 
-          <div class="field-gap" x-show="selectedProvider">
-            <button class="btn" @click="testProvider()" :disabled="testingProvider || !providerReady">
-              <span class="icon sm">bolt</span>
-              <span x-text="testingProvider ? 'Testing…' : 'Test Connection'"></span>
-            </button>
-            <span class="hint" style="margin-left:8px;color:var(--amber);">Required before continuing</span>
-            <div class="test-result" x-show="providerTest.message"
-                 :class="providerTestPassed?'ok':'err'"
-                 x-text="providerTest.ok && !providerTestPassed ? 'Configuration changed — test the connection again' : providerTest.message"></div>
-          </div>
-        </div>
+          <template x-if="xai.status === 'pending'">
+            <div>
+              <p class="hint" style="margin:0 0 10px;">A new tab opened. Enter the code below on the xAI page, then come back here.</p>
+              <a :href="xai.verificationUri" target="_blank"
+                 style="display:block;color:var(--signal-hi);font-size:12.5px;word-break:break-all;margin-bottom:12px;font-weight:600;"
+                 x-text="xai.verificationUri"></a>
+              <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;margin-bottom:12px;">
+                <span style="font-family:var(--font-mono);font-size:26px;letter-spacing:5px;color:var(--text);" x-text="xai.userCode"></span>
+              </div>
+              <p class="hint" style="text-align:center;margin:0;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <span class="icon" style="font-size:15px;animation:spin 1.4s linear infinite;">progress_activity</span>
+                Waiting for authorisation…
+              </p>
+            </div>
+          </template>
+
+          <template x-if="xai.status === 'authorized'">
+            <div style="text-align:center;padding:8px 0;">
+              <p style="color:var(--ok);font-size:13.5px;margin:0 0 6px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;">
+                <span class="icon fill" style="font-size:17px;">check_circle</span> SuperGrok authorised
+              </p>
+              <p class="hint" style="margin:0;">Gateway is restarting with xAI OAuth. Set model below (e.g. <code>grok-4.3</code>).</p>
+            </div>
+          </template>
+
+          <template x-if="xai.status === 'error' || xai.status === 'expired'">
+            <div>
+              <p style="color:var(--bad);font-size:13.5px;margin:0 0 10px;" x-text="xai.error || 'Authorisation failed or expired'"></p>
+              <button class="btn primary" style="width:100%;" @click="xai.status='none'; xai.error=''; startXaiOauth()">
+                Try Again
+              </button>
+            </div>
+          </template>
         </div>
 
-        <div x-show="setupMode==='channel' || (setupMode==='initial' && wizardStep===2)">
+        <!-- Configured LLM Providers -->
+        <template x-if="configuredProviders.length > 0">
+          <div>
+            <div class="section-label">
+              <span class="icon" style="font-size:14px;">check_circle</span>
+              Configured Providers
+            </div>
+            <div class="card" style="padding:0 18px;">
+              <template x-for="(cp, idx) in configuredProviders" :key="cp.name">
+                <div :style="idx < configuredProviders.length - 1 ? 'border-bottom:1px solid var(--border-soft);' : ''">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;">
+                    <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:13.5px;font-weight:600;color:var(--text);" x-text="cp.name"></span>
+                        <span x-show="cp.isOauth" class="chip" style="background:var(--signal-wash);color:var(--signal-hi);">OAuth</span>
+                        <span x-show="!cp.isOauth && !cp.isCustom && !cp.isBedrock && !cp.isAzure" class="chip green">
+                          <span class="icon fill">check_circle</span> API key set
+                        </span>
+                        <span x-show="cp.isBedrock" class="chip" style="background:rgba(255,153,0,.15);color:#f0a63c;">AWS</span>
+                        <span x-show="cp.isAzure" class="chip" style="background:rgba(0,120,212,.15);color:#4db1ff;">Azure</span>
+                        <span x-show="cp.isCustom" class="chip" style="background:var(--warn-wash);color:var(--warn);">Custom</span>
+                      </div>
+                      <span x-show="cp.model" x-text="cp.model" style="font-size:12px;font-family:var(--font-mono);color:var(--text-faint);"></span>
+                    </div>
+                    <button class="btn sm danger" style="flex-shrink:0;margin-left:12px;" @click="removeProvider(cp.providerKey)">Remove</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
         <!-- Messaging Channels -->
         <div class="section-label">
+          <span class="icon" style="font-size:14px;">forum</span>
           Messaging Channels
-          <span class="req-note">— at least one required</span>
+          <span class="req-note" style="color:var(--text-faint);">— optional</span>
         </div>
-        <div class="card" style="padding: 0 16px;">
+        <div class="card" style="padding:4px 18px;">
 
-          <!-- Telegram -->
           <div class="toggle-row" @click="channelsEnabled.telegram=!channelsEnabled.telegram; if(!channelsEnabled.telegram) clearChannel('telegram')">
             <input type="checkbox" :checked="channelsEnabled.telegram" @click.stop @change="channelsEnabled.telegram=$event.target.checked; if(!channelsEnabled.telegram) clearChannel('telegram')">
-            <span class="icon">send</span>
+            <span class="toggle-icon-wrap"><span class="icon">send</span></span>
             <span class="toggle-label">Telegram</span>
           </div>
           <div class="toggle-body" x-show="channelsEnabled.telegram">
@@ -861,10 +1091,9 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </div>
           </div>
 
-          <!-- Discord -->
           <div class="toggle-row" @click="channelsEnabled.discord=!channelsEnabled.discord; if(!channelsEnabled.discord) clearChannel('discord')">
             <input type="checkbox" :checked="channelsEnabled.discord" @click.stop @change="channelsEnabled.discord=$event.target.checked; if(!channelsEnabled.discord) clearChannel('discord')">
-            <span class="icon">sports_esports</span>
+            <span class="toggle-icon-wrap"><span class="icon">forum</span></span>
             <span class="toggle-label">Discord</span>
           </div>
           <div class="toggle-body" x-show="channelsEnabled.discord">
@@ -874,10 +1103,9 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </div>
           </div>
 
-          <!-- Slack -->
           <div class="toggle-row" @click="channelsEnabled.slack=!channelsEnabled.slack; if(!channelsEnabled.slack) clearChannel('slack')">
             <input type="checkbox" :checked="channelsEnabled.slack" @click.stop @change="channelsEnabled.slack=$event.target.checked; if(!channelsEnabled.slack) clearChannel('slack')">
-            <span class="icon">workspaces</span>
+            <span class="toggle-icon-wrap"><span class="icon">tag</span></span>
             <span class="toggle-label">Slack</span>
           </div>
           <div class="toggle-body" x-show="channelsEnabled.slack">
@@ -887,10 +1115,9 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </div>
           </div>
 
-          <!-- Email -->
           <div class="toggle-row" @click="channelsEnabled.email=!channelsEnabled.email; if(!channelsEnabled.email) clearChannel('email')">
             <input type="checkbox" :checked="channelsEnabled.email" @click.stop @change="channelsEnabled.email=$event.target.checked; if(!channelsEnabled.email) clearChannel('email')">
-            <span class="icon">mail</span>
+            <span class="toggle-icon-wrap"><span class="icon">mail</span></span>
             <span class="toggle-label">Email</span>
           </div>
           <div class="toggle-body" x-show="channelsEnabled.email">
@@ -902,10 +1129,9 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </div>
           </div>
 
-          <!-- Mattermost -->
           <div class="toggle-row" @click="channelsEnabled.mattermost=!channelsEnabled.mattermost; if(!channelsEnabled.mattermost) clearChannel('mattermost')">
             <input type="checkbox" :checked="channelsEnabled.mattermost" @click.stop @change="channelsEnabled.mattermost=$event.target.checked; if(!channelsEnabled.mattermost) clearChannel('mattermost')">
-            <span class="icon">dns</span>
+            <span class="toggle-icon-wrap"><span class="icon">chat_bubble</span></span>
             <span class="toggle-label">Mattermost</span>
           </div>
           <div class="toggle-body" x-show="channelsEnabled.mattermost">
@@ -915,10 +1141,9 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </div>
           </div>
 
-          <!-- Matrix -->
           <div class="toggle-row" @click="channelsEnabled.matrix=!channelsEnabled.matrix; if(!channelsEnabled.matrix) clearChannel('matrix')">
             <input type="checkbox" :checked="channelsEnabled.matrix" @click.stop @change="channelsEnabled.matrix=$event.target.checked; if(!channelsEnabled.matrix) clearChannel('matrix')">
-            <span class="icon">apps</span>
+            <span class="toggle-icon-wrap"><span class="icon">apps</span></span>
             <span class="toggle-label">Matrix</span>
           </div>
           <div class="toggle-body" x-show="channelsEnabled.matrix">
@@ -929,31 +1154,31 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
             </div>
           </div>
 
-          <!-- WhatsApp -->
           <div class="toggle-row" style="border-bottom:none;" @click="channelsEnabled.whatsapp=!channelsEnabled.whatsapp; vars.WHATSAPP_ENABLED=channelsEnabled.whatsapp?'true':'false'">
             <input type="checkbox" :checked="channelsEnabled.whatsapp" @click.stop @change="channelsEnabled.whatsapp=$event.target.checked; vars.WHATSAPP_ENABLED=$event.target.checked?'true':'false'">
-            <span class="icon">forum</span>
+            <span class="toggle-icon-wrap"><span class="icon">chat</span></span>
             <span class="toggle-label">WhatsApp</span>
-            <span style="font-size:11px;color:var(--text-dim);margin-left:8px;">pairing via gateway logs on first run</span>
+            <span style="font-size:11.5px;color:var(--text-faint);margin-left:6px;">pairing via gateway logs on first run</span>
           </div>
 
         </div>
 
         <!-- Gateway options -->
-        <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="card" style="display:flex;align-items:center;gap:14px;">
           <input type="checkbox" :checked="vars.GATEWAY_ALLOW_ALL_USERS==='true'" @change="vars.GATEWAY_ALLOW_ALL_USERS=$event.target.checked?'true':'false'">
           <div>
-            <p style="font-size:13px;font-weight:500;">Allow all users</p>
-            <p class="hint" style="margin-top:2px;">Skip per-platform allowlists — use with caution</p>
+            <p style="font-size:13.5px;font-weight:600;color:var(--text);">Allow all users</p>
+            <p class="hint" style="margin-top:3px;">Skip per-platform allowlists — use with caution</p>
           </div>
         </div>
 
         <!-- Tool API Keys -->
         <div class="section-label">
+          <span class="icon" style="font-size:14px;">build</span>
           Tool API Keys
-          <span class="req-note">— optional</span>
+          <span class="req-note" style="color:var(--text-faint);">— optional</span>
         </div>
-        <div class="card" style="padding: 0 16px;">
+        <div class="card" style="padding:4px 18px;">
           <template x-for="(t, i) in tools" :key="t.key">
             <div>
               <div class="toggle-row" :style="i===tools.length-1 && !toolsEnabled[t.key] ? 'border-bottom:none' : ''"
@@ -962,7 +1187,7 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
                        @change="toolsEnabled[t.key]=$event.target.checked; if(!toolsEnabled[t.key]) clearTool(t)">
                 <span class="toggle-label" x-text="t.label"></span>
               </div>
-              <div class="toggle-body" x-show="toolsEnabled[t.key]"
+              <div class="toggle-body" x-show="toolsEnabled[t.key]" style="padding-left:2px;"
                    :style="i===tools.length-1 ? 'border-bottom:none' : ''">
                 <div>
                   <label class="field-label">API Key</label>
@@ -977,76 +1202,22 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
           </template>
         </div>
 
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <div>
-              <div class="card-title" style="margin-bottom:3px;">Channel connection test</div>
-              <p class="hint" style="margin-top:0;">Checks every enabled channel using the credentials above.</p>
-              <p class="hint" style="color:var(--amber);">All enabled channels must pass before continuing.</p>
-            </div>
-            <button class="btn" @click="testChannels()" :disabled="testingChannels || enabledChannelNames.length===0"
-                    x-text="testingChannels?'Testing…':'Test Channels'"></button>
-          </div>
-          <template x-for="(result,name) in channelTests" :key="name">
-            <div class="test-result" :class="result.ok && result.fingerprint===channelFingerprint(name)?'ok':'err'">
-              <strong x-text="name"></strong>
-              <span x-text="' — '+(result.ok && result.fingerprint!==channelFingerprint(name) ? 'Configuration changed — test this channel again' : result.message)"></span>
-            </div>
-          </template>
-        </div>
-        </div>
-
-        <div x-show="setupMode==='initial' && wizardStep===3">
-          <div class="section-label">Configuration Review</div>
-          <div class="stat-grid">
-            <div class="stat-card"><div class="stat-label">Provider</div><div class="stat-value" style="font-size:14px" x-text="selectedProvider||'—'"></div></div>
-            <div class="stat-card"><div class="stat-label">Model</div><div class="stat-value" style="font-size:12px;word-break:break-all" x-text="vars.LLM_MODEL||'—'"></div></div>
-            <div class="stat-card"><div class="stat-label">Channels</div><div class="stat-value" style="font-size:14px" x-text="enabledChannelNames.length ? enabledChannelNames.join(', ') : '—'"></div></div>
-          </div>
-
-          <div class="section-label">System Diagnostics</div>
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-              <div>
-                <div class="card-title" style="margin-bottom:3px;">Railway readiness</div>
-                <p class="hint" style="margin-top:0;">Checks the current form and Railway runtime without exposing secrets.</p>
-              </div>
-              <button class="btn" @click="runDiagnostics()" :disabled="diagnosing"
-                      x-text="diagnosing?'Checking…':'Run Diagnostics'"></button>
-            </div>
-            <div x-show="diagnostics.checks.length===0" class="empty-state" style="padding:22px 0 8px;">Run diagnostics to verify this deployment.</div>
-            <template x-for="check in diagnostics.checks" :key="check.name">
-              <div class="diagnostic-row">
-                <span class="icon diagnostic-icon" :class="check.level" x-text="check.ok?'check_circle':check.level==='warning'?'warning':'cancel'"></span>
-                <div><div style="font-weight:500" x-text="check.name"></div><div class="hint" style="margin-top:2px" x-text="check.detail"></div></div>
-              </div>
-            </template>
-          </div>
-        </div>
-        </div>
-
       </div>
-      <div class="save-bar" x-show="setupMode!=='summary' || !isSetupDone">
-        <button class="btn" x-show="setupMode==='initial' && wizardStep>1" @click="wizardStep--"><span class="icon sm">arrow_back</span>Back</button>
-        <button class="btn" x-show="setupMode!=='initial'" @click="cancelSetupAction()">Cancel</button>
-        <span x-show="setupMode==='initial' && wizardStep===1" class="hint">Step 1 of 3</span>
-        <label x-show="setupMode==='initial' && wizardStep===3" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;">
+      <div class="save-bar">
+        <label class="save-bar-check">
           <input type="checkbox" x-model="restartOnSave"> Restart gateway after save
         </label>
-        <button class="btn primary" x-show="setupMode==='initial' && wizardStep<3" @click="goWizardStep(wizardStep+1)"
-                :disabled="wizardStep===1 ? (!providerReady || !providerTestPassed) : (!channelsReady || !channelsTestPassed)">Next<span class="icon sm">arrow_forward</span></button>
-        <button class="btn primary" x-show="setupMode==='initial' && wizardStep===3" @click="saveConfig()" :disabled="saving || !setupReady">
-          <span x-show="!saving">Save &amp; Start</span>
-          <span x-show="saving">Saving…</span>
-        </button>
-        <button class="btn primary" x-show="setupMode==='provider'" @click="saveConfig()"
-                :disabled="saving || !providerReady || !providerTestPassed">
-          <span x-show="!saving">Save Provider</span><span x-show="saving">Saving…</span>
-        </button>
-        <button class="btn primary" x-show="setupMode==='channel'" @click="saveConfig()"
-                :disabled="saving || !channelsReady || !channelsTestPassed">
-          <span x-show="!saving">Save Channels</span><span x-show="saving">Saving…</span>
-        </button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn"
+                  @click="window.location.href='/?force=1'"
+                  title="Open the native Hermes dashboard — browse all providers, skills, and analytics">
+            Open Dashboard <span class="icon" style="font-size:16px;">arrow_forward</span>
+          </button>
+          <button class="btn primary" @click="saveConfig()" :disabled="saving">
+            <span x-show="!saving">Save &amp; Start</span>
+            <span x-show="saving">Saving…</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1067,7 +1238,7 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
           </div>
           <div class="stat-card">
             <div class="stat-label">Uptime</div>
-            <div class="stat-value" style="font-size:16px;" x-text="gw.uptime!=null ? fmtUptime(gw.uptime) : '—'"></div>
+            <div class="stat-value" style="font-size:17px;" x-text="gw.uptime!=null ? fmtUptime(gw.uptime) : '—'"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Pending Pairs</div>
@@ -1075,43 +1246,41 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
           </div>
           <div class="stat-card">
             <div class="stat-label">Model</div>
-            <div class="stat-value" style="font-size:12px;word-break:break-all;" x-text="vars.LLM_MODEL||'—'"></div>
+            <div class="stat-value" style="font-size:12.5px;word-break:break-all;font-family:var(--font-mono);" x-text="vars.LLM_MODEL||'—'"></div>
           </div>
         </div>
 
         <div class="action-row">
-          <button class="btn success" @click="startGw()"        :disabled="gw.state==='running'"><span class="icon sm">play_arrow</span>Start</button>
-          <button class="btn danger"  @click="stopGw()"         :disabled="gw.state==='stopped'"><span class="icon sm">stop</span>Stop</button>
-          <button class="btn"         @click="restartGateway()"><span class="icon sm">restart_alt</span>Restart</button>
+          <button class="btn success" @click="startGw()" :disabled="gw.state==='running'"><span class="icon">play_arrow</span> Start</button>
+          <button class="btn danger"  @click="stopGw()"  :disabled="gw.state==='stopped'"><span class="icon">stop</span> Stop</button>
+          <button class="btn"         @click="restartGateway()"><span class="icon">refresh</span> Restart</button>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="status-split" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div>
-            <div class="section-label">Providers</div>
+            <div class="section-label" style="margin-top:0;">Providers</div>
             <div class="card" style="padding:0;overflow:hidden;">
               <template x-for="(info,name) in status.providers||{}" :key="name">
-                <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--hairline);">
-                  <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;" x-text="name"></div>
-                    <div class="hint" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                         x-text="info.configured ? info.model : (info.key_set ? 'API key found · add a model to register this provider' : 'Not configured')"></div>
-                  </div>
-                  <span class="chip" :class="info.configured?'green':'dim'" x-text="info.configured?'ready':info.key_set?'key only':'—'"></span>
-                  <button class="provider-switch" :class="{on:info.active}"
-                          :disabled="!info.configured || info.active || !info.model"
-                          :title="!info.configured?'Set the API key in Setup first':!info.model?'Choose a model in Setup first':info.active?'Active provider':'Activate '+name"
-                          @click="activateProvider(name)"></button>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border-soft);">
+                  <span style="font-size:13px;" x-text="name"></span>
+                  <span class="chip" :class="info.configured?'green':'dim'">
+                    <span class="icon fill" x-show="info.configured">check_circle</span>
+                    <span x-text="info.configured?'set':'—'"></span>
+                  </span>
                 </div>
               </template>
             </div>
           </div>
           <div>
-            <div class="section-label">Channels</div>
+            <div class="section-label" style="margin-top:0;">Channels</div>
             <div class="card" style="padding:0;overflow:hidden;">
               <template x-for="(info,name) in status.channels||{}" :key="name">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--hairline);">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border-soft);">
                   <span style="font-size:13px;" x-text="name"></span>
-                  <span class="chip" :class="info.configured?'green':'dim'" x-text="info.configured?'set':'—'"></span>
+                  <span class="chip" :class="info.configured?'green':'dim'">
+                    <span class="icon fill" x-show="info.configured">check_circle</span>
+                    <span x-text="info.configured?'set':'—'"></span>
+                  </span>
                 </div>
               </template>
             </div>
@@ -1143,46 +1312,41 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
       </div>
       <div class="panel-body">
 
-        <div class="section-label">Pending Pairing Requests</div>
+        <div class="section-label" style="margin-top:0;">Pending Pairing Requests</div>
         <div class="empty-state" x-show="pending.length===0">No pending requests. Unauthorized users who message your bot will appear here.</div>
-        <template x-for="r in pending" :key="r.platform+r.request_id">
+        <template x-for="r in pending" :key="r.platform+r.code">
           <div class="pair-card pending">
             <div style="flex:1;">
-              <div style="font-size:13px;font-weight:500;" x-text="r.user_name||r.user_id"></div>
-              <div class="hint" style="margin-top:3px;">
+              <div style="font-size:13.5px;font-weight:600;" x-text="r.user_name||r.user_id"></div>
+              <div class="hint" style="margin-top:4px;">
                 <span x-text="r.platform"></span>
                 <span x-show="r.user_name" x-text="' · #'+r.user_id"></span>
                 <span x-text="' · '+r.age_minutes+'m ago'"></span>
               </div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="btn sm success" @click="approve(r.platform,r.request_id)">Approve</button>
-              <button class="btn sm danger"  @click="deny(r.platform,r.request_id)">Deny</button>
+              <button class="btn sm success" @click="approve(r.platform,r.code)"><span class="icon">check</span> Approve</button>
+              <button class="btn sm danger"  @click="deny(r.platform,r.code)"><span class="icon">close</span> Deny</button>
             </div>
           </div>
         </template>
 
-        <div class="section-label" style="margin-top:20px;">Approved Users</div>
+        <div class="section-label">Approved Users</div>
         <div class="empty-state" x-show="approved.length===0">No approved users yet.</div>
         <div class="card" style="padding:0;overflow:hidden;" x-show="approved.length>0">
           <table class="data-table">
             <thead>
-              <tr>
-                <th>Platform</th>
-                <th>User</th>
-                <th>Approved</th>
-                <th></th>
-              </tr>
+              <tr><th>Platform</th><th>User</th><th>Approved</th><th></th></tr>
             </thead>
             <tbody>
               <template x-for="u in approved" :key="u.platform+u.user_id">
                 <tr>
-                  <td style="color:var(--gold-2);" x-text="u.platform"></td>
+                  <td style="color:var(--signal-hi);font-weight:600;" x-text="u.platform"></td>
                   <td>
                     <span x-text="u.user_name||u.user_id"></span>
-                    <span style="color:var(--text-dim);font-size:12px;font-family:var(--font-mono);" x-show="u.user_name" x-text="' #'+u.user_id"></span>
+                    <span style="color:var(--text-faint);font-size:12px;font-family:var(--font-mono);" x-show="u.user_name" x-text="' #'+u.user_id"></span>
                   </td>
-                  <td style="color:var(--text-dim);font-size:12px;" x-text="fmtDate(u.approved_at)"></td>
+                  <td style="color:var(--text-faint);font-size:12px;" x-text="fmtDate(u.approved_at)"></td>
                   <td style="text-align:right;">
                     <button class="btn sm danger" @click="revoke(u.platform,u.user_id)">Revoke</button>
                   </td>
@@ -1195,110 +1359,289 @@ code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5
       </div>
     </div>
 
+    <!-- ── Backup panel ─────────────────────────────── -->
+    <div class="panel" :class="{active: page==='backup'}">
+      <div class="panel-header">
+        <div class="panel-title">Backup &amp; Restore</div>
+        <div class="panel-subtitle">Clone this deployment into another project</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="section-label" style="margin-top:0;">Download Backup</div>
+        <div class="card">
+          <p style="font-size:13px;color:var(--text-dim);line-height:1.65;margin:0 0 14px;">
+            Downloads a full snapshot of this deployment — config, provider keys, channel tokens,
+            approved users, chat history, memories, skills, and cron jobs — as a single .zip.
+            Upload it via Restore below on another deployment to reproduce this bot there.
+            <strong style="color:var(--text);">The file is not encrypted</strong> — it contains
+            your API keys and bot tokens in plain text, so store it somewhere safe.
+          </p>
+          <button class="btn" @click="downloadBackup()" :disabled="backupBusy">
+            <span class="icon" x-show="!backupBusy">download</span>
+            <span x-show="!backupBusy">Download Backup</span>
+            <span x-show="backupBusy">Preparing…</span>
+          </button>
+        </div>
+
+        <div class="section-label">Restore from Backup</div>
+        <div class="card">
+          <p style="font-size:13px;color:var(--text-dim);line-height:1.65;margin:0 0 14px;">
+            Uploading a backup here <strong style="color:var(--text);">overwrites</strong> this
+            deployment's current config, credentials, and data with the backup's contents, then
+            briefly restarts the gateway. Anything changed here since the backup was taken (e.g.
+            newer user approvals) can be lost. A safety snapshot of the current state is taken
+            automatically first — see below if you need to recover it.
+          </p>
+          <label class="dropzone" :class="{dragging: restoreDragging}"
+                 @dragenter.prevent.stop="restoreDragging = true"
+                 @dragover.prevent.stop="restoreDragging = true"
+                 @dragleave.prevent.stop="restoreDragging = false"
+                 @drop.prevent.stop="restoreDragging = false; setRestoreFile($event.dataTransfer.files[0])">
+            <input type="file" accept=".zip,application/zip" x-ref="restoreInput"
+                   @change="setRestoreFile($event.target.files[0])"
+                   class="dropzone-input">
+            <span class="icon dropzone-icon">cloud_upload</span>
+            <div class="dropzone-main">
+              <span x-show="!restoreFile">Drop a backup .zip here, or <span class="dropzone-link">browse</span></span>
+              <span x-show="restoreFile" class="dropzone-file" x-text="restoreFile ? restoreFile.name : ''"></span>
+            </div>
+            <div class="dropzone-sub" x-show="!restoreFile">Only .zip files created by Download Backup</div>
+            <div class="dropzone-sub" x-show="restoreFile" x-text="restoreFile ? fmtBytes(restoreFile.size) + ' — click or drop again to replace' : ''"></div>
+          </label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;">
+            <button class="btn danger" @click="restoreBackup()" :disabled="restoreBusy || !restoreFile">
+              <span class="icon" x-show="!restoreBusy">upload_file</span>
+              <span x-show="!restoreBusy">Upload &amp; Restore</span>
+              <span x-show="restoreBusy">Restoring…</span>
+            </button>
+            <button class="btn" type="button" x-show="restoreFile" @click="clearRestoreFile()">Clear</button>
+          </div>
+          <div class="restore-result" x-show="restoreResult" x-cloak
+               :class="restoreResult && restoreResult.ok ? 'ok' : (restoreResult && restoreResult.warn ? 'warn' : 'err')">
+            <span class="icon" x-text="restoreResult && restoreResult.ok ? 'check_circle' : (restoreResult && restoreResult.warn ? 'warning' : 'error')"></span>
+            <span x-text="restoreResult ? restoreResult.msg : ''"></span>
+          </div>
+        </div>
+
+        <div class="section-label">Safety Snapshots</div>
+        <div class="empty-state" x-show="snapshots.length===0">None yet — one is taken automatically before every restore.</div>
+        <div class="card" style="padding:0;overflow:hidden;" x-show="snapshots.length>0">
+          <table class="data-table">
+            <thead><tr><th>Created</th><th>Size</th><th></th></tr></thead>
+            <tbody>
+              <template x-for="s in snapshots" :key="s.name">
+                <tr>
+                  <td style="color:var(--text-faint);font-size:12px;" x-text="fmtDate(s.created_at)"></td>
+                  <td style="color:var(--text-faint);font-size:12px;" x-text="fmtBytes(s.size)"></td>
+                  <td style="text-align:right;">
+                    <a class="btn sm" :href="'/setup/api/backup/snapshots/'+encodeURIComponent(s.name)"><span class="icon">download</span> Download</a>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Guide panel ─────────────────────────────── -->
+    <div class="panel" :class="{active: page==='guide'}">
+      <div class="panel-header">
+        <div class="panel-title">How to Setup</div>
+        <div class="panel-subtitle">Get your Hermes Agent running in minutes</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="guide-section">
+          <div class="guide-section-title">
+            <span class="guide-num">1</span>
+            Get a Free LLM API Key
+          </div>
+          <ol class="step-list">
+            <li>Go to <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a> and create a free account.</li>
+            <li>
+              Once logged in, go to <a href="https://openrouter.ai/workspaces/default/keys" target="_blank" rel="noopener">openrouter.ai/workspaces/default/keys</a> and click <strong>Create Key</strong>.
+              <span class="step-note">Copy the generated API key — it starts with <code>sk-or-...</code></span>
+            </li>
+            <li>
+              OpenRouter offers many models, including free ones. To get started, you can pick a free model such as:
+              <span class="step-note"><code>nvidia/llama-3.3-nemotron-super-49b-v1:free</code></span>
+              <span class="step-note">Browse all available models at <a href="https://openrouter.ai/models" target="_blank" rel="noopener">openrouter.ai/models</a> — filter by "Free" to see no-cost options.</span>
+            </li>
+            <li>
+              Head over to the <strong>Setup</strong> page (left sidebar), select <strong>OpenRouter</strong> as provider, paste your API key, and enter the model name.
+              <span class="step-note">
+                Want a different provider (Anthropic, DeepSeek, Groq, Cerebras, Mistral, etc.)? Open the
+                <a href="/?force=1" style="color:var(--signal-hi);">Hermes Dashboard</a> from the sidebar — the
+                <strong>Keys</strong> tab lists every provider Hermes supports out of the box, plus
+                skills, toolsets, and analytics you can configure from there.
+              </span>
+            </li>
+          </ol>
+        </div>
+
+        <div class="guide-section">
+          <div class="guide-section-title">
+            <span class="guide-num">2</span>
+            Connect a Messaging Platform
+          </div>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">
+            Hermes Agent can work through messaging platforms. Connecting one is optional — the easiest to set up is <strong style="color:var(--text);">Telegram</strong>.
+          </p>
+          <ol class="step-list">
+            <li>Open Telegram and search for <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a>.</li>
+            <li>Send <code>/newbot</code> and follow the prompts — give your bot a name and username.</li>
+            <li>
+              BotFather will reply with a <strong>Bot Token</strong> — it looks like <code>1234567890:ABCdefGhIjKlMnOpQrStUvWxYz</code>.
+              <span class="step-note">Copy this token.</span>
+            </li>
+            <li>Go to the <strong>Setup</strong> page, enable <strong>Telegram</strong> under Messaging Channels, and paste the Bot Token.</li>
+            <li>
+              For <strong>Allowed User IDs</strong>, if you're just starting out, enter <code>*</code> to allow all users.
+              <span class="step-note">You can restrict access later by specifying individual Telegram user IDs.</span>
+            </li>
+            <li>Click <strong>Save & Start</strong> on the bottom right — your Hermes Agent is now live!</li>
+          </ol>
+        </div>
+
+        <div class="callout" style="background:var(--bad-wash);border-color:rgba(239,91,91,0.25);">
+          <span class="icon" style="color:var(--bad);">help</span>
+          <span>Facing an issue or something not working as expected? <a href="https://github.com/praveen-ks-2001/hermes-agent-template/issues" target="_blank" rel="noopener" style="color:var(--bad);">Create a GitHub issue</a> and we'll help you out.</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Changelog panel ─────────────────────────── -->
+    <div class="panel" :class="{active: page==='changelog'}">
+      <div class="panel-header">
+        <div class="panel-title">What's New</div>
+        <div class="panel-subtitle">Changes and updates to this template</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="callout">
+          <span class="icon">info</span>
+          <div>
+            <div style="margin-bottom:8px;">
+              <code>main</code> always ships the <strong style="color:var(--text);">latest</strong> release — that is what you get by default.
+              To stay on, or roll back to, a particular Hermes version, point your Railway service at that release's branch and redeploy.
+            </div>
+            <div>
+              Release branches are named <code>release/&lt;hermes-version&gt;/&lt;n&gt;</code>.
+              <code>/1</code> is where that Hermes version first landed; <code>/2</code>, <code>/3</code> and so on are
+              template-only fixes and improvements on top of it — the Hermes version never changes within a series.
+              <strong style="color:var(--text);">Pick the highest number</strong> for the Hermes version you want; each branch stays put once published.
+            </div>
+          </div>
+        </div>
+
+        <div class="changelog-entry minor">
+          <div class="changelog-date">July 30, 2026</div>
+          <div class="changelog-meta">
+            <span class="meta-box"><span class="meta-label">Git branch</span><code>release/v2026.7.20/2</code></span>
+            <span class="meta-box version"><span class="meta-label">Hermes compatible version</span><code>v2026.7.20</code></span>
+          </div>
+
+          <div class="changelog-group">Bug fixes</div>
+          <ul class="changelog-list">
+            <li>Fixed <strong>Choose file</strong> doing nothing when restoring a backup on streamed "cloud" browsers, which never show the file dialog the old picker relied on (<a href="https://github.com/praveen-ks-2001/hermes-agent-template/issues/76" target="_blank" rel="noopener">#76</a>).</li>
+          </ul>
+
+          <div class="changelog-group">Improvements</div>
+          <ul class="changelog-list">
+            <li><strong>Backup restore</strong> — drag a .zip straight onto the Restore box, and see the outcome (success, warning, or why it failed) in the box itself rather than a brief pop-up.</li>
+            <li><strong>MiniMax (China)</strong> is now in the provider dropdown alongside the global one — separate platforms with separate keys, so you can set up either or both. Model hints added for both.</li>
+          </ul>
+        </div>
+
+        <div class="changelog-entry major">
+          <div class="changelog-date">July 27, 2026</div>
+          <div class="changelog-meta">
+            <span class="meta-box"><span class="meta-label">Git branch</span><code>release/v2026.7.20/1</code></span>
+            <span class="meta-box version"><span class="meta-label">Hermes compatible version</span><code>v2026.7.20</code></span>
+          </div>
+
+          <div class="changelog-group">Hermes update</div>
+          <ul class="changelog-list">
+            <li>Updated <strong>Hermes Agent to v2026.7.20</strong> (from v2026.7.1) — adds the new <strong>Hermes Console</strong>, session export, and three new providers: <strong>Fireworks AI</strong>, <strong>DeepInfra</strong> and <strong>Upstage Solar</strong>.</li>
+          </ul>
+
+          <div class="changelog-group">Changes to support upstream updates</div>
+          <ul class="changelog-list">
+            <li><strong>Hermes Console.</strong> Hermes added a new console connection; this template only forwards connections it explicitly knows about, so the button failed. Added it to that list.</li>
+            <li><strong>Restart throttling.</strong> Hermes added its own restart brake that paused the gateway before starting it — on top of the one this template already has. Turned Hermes' off so only ours applies; saving settings repeatedly no longer takes the bot offline.</li>
+            <li><strong>Backups.</strong> Hermes can now leave your chat history out of a backup while still reporting success. The template now checks the file itself: a restore is refused unless its automatic safety snapshot is complete, and downloads warn instead of quietly handing you a partial file.</li>
+            <li><strong>Paired users.</strong> Hermes now re-copies old pairing data on every start, which brought revoked users back. The template merges the old and new locations into one after a restore, so a revoke stays revoked.</li>
+            <li><strong>Long replies.</strong> Hermes stopped sending keep-alive pings on its internal connection; this template was still expecting them and cut Chat off mid-reply. Matched Hermes' behaviour.</li>
+            <li><strong>MCP sign-in.</strong> Hermes builds its return address from the web address it sees, which is internal behind this template's proxy. The template now tells Hermes its real public URL.</li>
+            <li><strong>Memory providers.</strong> Hermes added a button that installs software into the running container, with no check for immutable deployments. The template now warns first — anything installed this way is lost on the next deploy.</li>
+            <li><strong>Conversation auto-reset.</strong> Hermes changed its default, which would have made newly created deployments behave differently from existing ones. The template now sets it explicitly so both match.</li>
+          </ul>
+
+          <div class="changelog-group">Bug fixes</div>
+          <ul class="changelog-list">
+            <li>Fixed the <strong>Users</strong> tab reading the wrong location after a restore — pairing requests could be invisible and approvals ignored until the next restart.</li>
+            <li>Gateway shutdown now waits longer, so several connected chat platforms can disconnect cleanly instead of being cut off.</li>
+          </ul>
+        </div>
+
+        <div class="changelog-entry major">
+          <div class="changelog-date">July 13, 2026</div>
+          <div class="changelog-meta">
+            <span class="meta-box"><span class="meta-label">Git branch</span><code>v2026.7.1-update</code></span>
+            <span class="meta-box version"><span class="meta-label">Hermes compatible version</span><code>v2026.7.1</code></span>
+          </div>
+          <ul class="changelog-list">
+            <li>Added <strong>Backup &amp; Restore</strong> (under <strong>Data</strong> in the sidebar) — download a full snapshot of this deployment (config, provider keys, channel tokens, approved users, chat history, memories, skills, cron jobs) as a zip, and restore it — including into a fresh project — to clone a deployment. A safety snapshot of the current state is taken automatically before every restore.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Other Templates panel ───────────────────── -->
+    <div class="panel" :class="{active: page==='templates'}">
+      <div class="panel-header">
+        <div class="panel-title">Other Templates</div>
+        <div class="panel-subtitle">Deploy more AI agents on Railway</div>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:20px;">
+          Explore other AI agent templates you can deploy on Railway with one click.
+        </p>
+
+        <div class="template-grid">
+
+          <div class="template-card">
+            <div class="template-card-icon"><span class="icon">smart_toy</span></div>
+            <div class="template-card-name">OpenClaw</div>
+            <div class="template-card-desc">Self-hosted OpenClaw agent — deploy and manage your own OpenClaw instance on Railway.</div>
+            <a class="btn primary" href="https://railway.com/deploy/self-host-openclaw?referralCode=QXdhdr&utm_medium=integration&utm_source=template&utm_campaign=generic" target="_blank" rel="noopener">
+              Deploy on Railway
+            </a>
+          </div>
+
+          <div class="template-card">
+            <div class="template-card-icon"><span class="icon">attach_file</span></div>
+            <div class="template-card-name">Paperclip</div>
+            <div class="template-card-desc">Paperclip AI Company — deploy your own Paperclip AI agent instance on Railway.</div>
+            <a class="btn primary" href="https://railway.com/deploy/paperclip-ai-company?referralCode=QXdhdr&utm_medium=integration&utm_source=template&utm_campaign=generic" target="_blank" rel="noopener">
+              Deploy on Railway
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div><!-- #main -->
 </div><!-- #layout -->
-
-<!-- Bottom nav (mobile) -->
-<nav id="bottom-nav">
-  <div class="bn-item" :class="{active: page==='setup'}" @click="openSetup()">
-    <span class="icon">rocket_launch</span><span>Setup</span>
-  </div>
-  <div class="bn-item" :class="{active: page==='status', locked: !isSetupDone}" @click="isSetupDone && (page='status')">
-    <span class="icon">monitor_heart</span><span>Status</span>
-  </div>
-  <div class="bn-item" :class="{active: page==='logs', locked: !isSetupDone}" @click="isSetupDone && (page='logs')">
-    <span class="icon">terminal</span><span>Logs</span>
-  </div>
-  <div class="bn-item" :class="{active: page==='users'}" @click="page='users'">
-    <span class="icon">group</span><span>Users</span>
-    <span class="bn-badge" :class="{visible: pendingCount>0}" x-text="pendingCount"></span>
-  </div>
-  <div class="bn-item" @click="resetConfig()">
-    <span class="icon">delete_sweep</span><span>Reset</span>
-  </div>
-  <div class="bn-item" @click="logout()">
-    <span class="icon">logout</span><span>Logout</span>
-  </div>
-</nav>
 
 <!-- Toast -->
 <div id="toast" x-ref="toast"></div>
 
-<!-- Donation options -->
-<div class="modal-backdrop" x-show="donateModal" x-transition.opacity @click.self="donateModal=false">
-  <div class="modal donate-modal" role="dialog" aria-modal="true" aria-labelledby="donate-title">
-    <div class="donate-modal-header">
-      <span class="icon lg">volunteer_activism</span>
-      <div class="panel-title" id="donate-title">Support Hermes Admin</div>
-      <button class="modal-close" type="button" @click="donateModal=false" aria-label="Close donation options"><span class="icon sm">close</span></button>
-    </div>
-    <div class="donate-modal-body">
-      <p class="donate-intro">If this dashboard makes managing Hermes Agent easier, you can support its continued development through one of the options below. Thank you!</p>
-      <div class="donate-options">
-        <template x-for="option in donationOptions" :key="option.name">
-          <div class="donate-option">
-            <div class="donate-option-icon">
-              <img :src="option.logo" :alt="option.name+' logo'" loading="lazy">
-            </div>
-            <div class="donate-option-name" x-text="option.name"></div>
-            <div class="donate-option-copy" x-text="option.description"></div>
-            <img class="donate-qr" :src="option.qr" :alt="'QR code for '+option.name" loading="lazy">
-            <a class="btn primary donate-open" :href="option.url" target="_blank" rel="noopener noreferrer">
-              Open <span class="icon sm">open_in_new</span>
-            </a>
-          </div>
-        </template>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Provider restart confirmation -->
-<div class="modal-backdrop" x-show="switchModal.open" x-transition.opacity @click.self="switchModal.open=false">
-  <div class="modal">
-    <div class="panel-title">Provider switched</div>
-    <p style="margin-top:12px;line-height:1.55;">
-      <strong x-text="switchModal.provider"></strong>
-      <span x-text="' is now active with '+switchModal.model+'.'"></span>
-    </p>
-    <p class="hint" style="margin-top:10px;">New sessions use this provider immediately. Existing sessions keep their current model unless the gateway is restarted.</p>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
-      <button class="btn" @click="switchModal.open=false">Later</button>
-      <button class="btn primary" @click="restartAfterSwitch()">Restart now</button>
-    </div>
-  </div>
-</div>
-
-<!-- Logout confirmation -->
-<div class="modal-backdrop" x-show="logoutModal" x-transition.opacity @click.self="logoutModal=false">
-  <div class="modal">
-    <div class="panel-title" style="color:var(--amber);">Logout</div>
-    <p style="margin-top:12px;line-height:1.55;">Are you sure you want to logout from Hermes Admin?</p>
-    <p class="hint" style="margin-top:8px;">Your gateway will keep running. Only this dashboard session will end.</p>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
-      <button class="btn" @click="logoutModal=false">Cancel</button>
-      <button class="btn" style="border-color:var(--amber);color:var(--amber);" @click="confirmLogout()">Logout</button>
-    </div>
-  </div>
-</div>
-
-<!-- Managed integration removal -->
-<div class="modal-backdrop" x-show="removeModal.open" x-transition.opacity @click.self="removeModal.open=false">
-  <div class="modal">
-    <div class="panel-title" style="color:var(--coral);"
-         x-text="'Remove '+removeModal.name+'?'"></div>
-    <p style="margin-top:12px;line-height:1.55;"
-       x-text="removeModal.type==='provider' ? 'The API key and saved model for this provider will be deleted.' : 'All credentials and settings for this channel will be deleted.'"></p>
-    <p class="hint" style="margin-top:8px;"
-       x-text="removeModal.type==='channel' ? 'The gateway will restart automatically if it is running.' : 'This action cannot be undone.'"></p>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
-      <button class="btn" @click="removeModal.open=false">Cancel</button>
-      <button class="btn danger" @click="confirmManagedRemoval()" :disabled="removeModal.removing">
-        <span x-text="removeModal.removing?'Removing…':'Remove'"></span>
-      </button>
-    </div>
-  </div>
-</div>
 <script>
 function app() {
   const tools = [
@@ -1314,134 +1657,64 @@ function app() {
 
   return {
     page: 'setup',
-    theme: document.documentElement.dataset.theme || 'dark',
-    donateModal: false,
-    donationOptions: [
-      {
-        name: 'Ko-fi',
-        logo: 'https://cdn.simpleicons.org/kofi',
-        description: 'International support via Ko-fi',
-        url: 'https://ko-fi.com/asepsaputra',
-        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fko-fi.com%2Fasepsaputra',
-      },
-      {
-        name: 'Buy Me a Coffee',
-        logo: 'https://cdn.simpleicons.org/buymeacoffee',
-        description: 'International support via Buy Me a Coffee',
-        url: 'https://buymeacoffee.com/asepsaputra',
-        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fbuymeacoffee.com%2Fasepsaputra',
-      },
-      {
-        name: 'Saweria',
-        logo: 'https://saweria.co/favicon.ico',
-        description: 'Local support through Saweria',
-        url: 'https://saweria.co/asepsp',
-        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fsaweria.co%2Fasepsp',
-      },
-      {
-        name: 'PayPal',
-        logo: 'https://cdn.simpleicons.org/paypal',
-        description: 'Direct transfer through PayPal.Me',
-        url: 'https://paypal.me/selaris',
-        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fpaypal.me%2Fselaris',
-      },
-    ],
+    menuOpen: false,
     vars: {},
     gw: {},
     status: {},
     logs: [],
     pending: [],
     approved: [],
+    snapshots: [],
+    backupBusy: false,
+    restoreBusy: false,
+    restoreFile: null,
+    restoreDragging: false,
+    restoreResult: null,
     saving: false,
     restartOnSave: true,
-    setupMode: 'summary',
-    wizardStep: 1,
-    testingProvider: false,
-    loadingModels: false,
-    testingChannels: false,
-    diagnosing: false,
-    providerTest: { ok: false, message: '' },
-    availableModels: [],
-    modelLoadMessage: '',
-    modelDropdownOpen: false,
-    modelFilter: '',
-    activeModelBeforeAction: '',
-    channelTests: {},
-    diagnostics: { checks: [], summary: {} },
-    toggleTheme() {
-      this.theme = this.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = this.theme;
-      try { localStorage.setItem('hermes-theme', this.theme); } catch (_) {}
-    },
-    editingProvider: '',
-    switchModal: { open:false, provider:'', model:'' },
-    logoutModal: false,
-    removeModal: {open:false,type:'',name:'',removing:false},
+    // True only when the SERVER has a persisted complete config.
+    // Distinct from isSetupDone, which tracks the in-memory form.
+    savedConfigComplete: false,
+    // Hermes release this image pins, reported by the server (HERMES_REF).
+    // Never hardcoded here — it must stay correct when a deployment is pinned
+    // to an older release via the Railway variable.
+    hermesVersion: '',
 
     tools,
 
     providerMap: {
-      'OpenRouter': {
-        key:'OPENROUTER_API_KEY', slug:'openrouter', placeholder:'sk-or-...', modelExample:'e.g. google/gemini-2.5-flash',
-        modelHint:'Use provider/model-name format.', guide:'Login, open Keys, then create a new key.',
-        keyUrl:'https://openrouter.ai/settings/keys',
-      },
-      'OpenAI': {
-        key:'OPENAI_API_KEY', slug:'openai', placeholder:'sk-...', modelExample:'e.g. gpt-4.1-mini',
-        modelHint:'Use the model ID shown in the OpenAI model documentation.', guide:'Open API Keys and create a project secret key. API billing is separate from ChatGPT.',
-        keyUrl:'https://platform.openai.com/api-keys',
-      },
-      'Claude / Anthropic': {
-        key:'ANTHROPIC_API_KEY', slug:'anthropic', placeholder:'sk-ant-...', modelExample:'e.g. claude-sonnet-4-20250514',
-        modelHint:'Use an Anthropic API model ID, not an OpenRouter-prefixed name.', guide:'Open Anthropic Console, choose API Keys, then create a key.',
-        keyUrl:'https://console.anthropic.com/settings/keys',
-      },
-      'Google Gemini': {
-        key:'GEMINI_API_KEY', slug:'gemini', placeholder:'AIza...', modelExample:'e.g. gemini-2.5-flash',
-        modelHint:'Use a Google AI Studio model ID such as gemini-2.5-flash.', guide:'Open Google AI Studio, login, then click Create API key.',
-        keyUrl:'https://aistudio.google.com/app/apikey',
-      },
-      'xAI / Grok': {
-        key:'XAI_API_KEY', slug:'xai', placeholder:'xai-...', modelExample:'e.g. grok-4',
-        modelHint:'Use a model ID available to your xAI account.', guide:'Open the xAI Console and create an API key for your team.',
-        keyUrl:'https://console.x.ai/',
-      },
-      'NVIDIA NIM': {
-        key:'NVIDIA_API_KEY', slug:'nvidia', placeholder:'nvapi-...', modelExample:'e.g. meta/llama-3.1-8b-instruct',
-        modelHint:'Copy the model ID from NVIDIA API Catalog.', guide:'Choose a model in NVIDIA API Catalog, select Get API Key, and generate a key.',
-        keyUrl:'https://build.nvidia.com/',
-      },
-      'DeepSeek': {
-        key:'DEEPSEEK_API_KEY', slug:'deepseek', placeholder:'sk-...', modelExample:'e.g. deepseek-chat',
-        modelHint:'Use deepseek-chat or another model enabled for your account.', guide:'Open the DeepSeek platform API Keys page and create a new key.',
-        keyUrl:'https://platform.deepseek.com/api_keys',
-      },
-      'DashScope': {
-        key:'DASHSCOPE_API_KEY', slug:'alibaba', placeholder:'sk-...', modelExample:'e.g. qwen-plus',
-        modelHint:'The test uses the international DashScope endpoint.', guide:'Open Alibaba Model Studio, enable a model, then create an API key.',
-        keyUrl:'https://modelstudio.console.alibabacloud.com/',
-      },
-      'GLM / Z.AI': {
-        key:'GLM_API_KEY', slug:'zai', placeholder:'Paste your GLM key', modelExample:'e.g. glm-4.5',
-        modelHint:'Use a model ID enabled in the Z.AI developer platform.', guide:'Open the Z.AI API key management page and create a key.',
-        keyUrl:'https://z.ai/manage-apikey/apikey-list',
-      },
-      'Kimi': {
-        key:'KIMI_API_KEY', slug:'kimi-coding', placeholder:'sk-...', modelExample:'e.g. moonshot-v1-8k',
-        modelHint:'Use a Moonshot model ID available to your account.', guide:'Open Moonshot Platform, then create a key under API Keys.',
-        keyUrl:'https://platform.moonshot.ai/console/api-keys',
-      },
-      'MiniMax': {
-        key:'MINIMAX_API_KEY', slug:'minimax', placeholder:'Paste your MiniMax key', modelExample:'e.g. MiniMax-M2.1',
-        modelHint:'Use a model ID supported by the global MiniMax API.', guide:'Open MiniMax Platform, enter API key management, and create a key.',
-        keyUrl:'https://platform.minimax.io/user-center/basic-information/interface-key',
-      },
-      'HuggingFace': {
-        key:'HF_TOKEN', slug:'huggingface', placeholder:'hf_...', modelExample:'e.g. meta-llama/Llama-3.1-8B-Instruct',
-        modelHint:'Use the repository ID of an inference-supported model.', guide:'Open Access Tokens, create a fine-grained token, and grant inference access.',
-        keyUrl:'https://huggingface.co/settings/tokens',
-      },
+      'OpenRouter':           { key: 'OPENROUTER_API_KEY',  modelKey: '_MODEL_OPENROUTER_API_KEY',  placeholder: 'sk-or-...' },
+      'DeepSeek':             { key: 'DEEPSEEK_API_KEY',    modelKey: '_MODEL_DEEPSEEK_API_KEY',    placeholder: 'sk-...'    },
+      'Qwen Cloud':           { key: 'DASHSCOPE_API_KEY',   modelKey: '_MODEL_DASHSCOPE_API_KEY',   placeholder: ''          },
+      'GLM / Z.AI':           { key: 'GLM_API_KEY',         modelKey: '_MODEL_GLM_API_KEY',         placeholder: ''          },
+      'Kimi':                 { key: 'KIMI_API_KEY',         modelKey: '_MODEL_KIMI_API_KEY',        placeholder: ''          },
+      'MiniMax':              { key: 'MINIMAX_API_KEY',      modelKey: '_MODEL_MINIMAX_API_KEY',     placeholder: ''          },
+      // MiniMax's China platform is a separate account and key from the global
+      // one (hermes provider id "minimax-cn"). Listed separately so both can be
+      // configured at the same time and switched between like any other pair.
+      'MiniMax (China)':      { key: 'MINIMAX_CN_API_KEY',   modelKey: '_MODEL_MINIMAX_CN_API_KEY', placeholder: ''          },
+      'HuggingFace':          { key: 'HF_TOKEN',             modelKey: '_MODEL_HF_TOKEN',            placeholder: 'hf_...'   },
+      'NVIDIA NIM':           { key: 'NVIDIA_API_KEY',       modelKey: '_MODEL_NVIDIA_API_KEY',      placeholder: 'nvapi-...' },
+      'NovitaAI':             { key: 'NOVITA_API_KEY',       modelKey: '_MODEL_NOVITA_API_KEY',      placeholder: ''          },
+      'Arcee AI':             { key: 'ARCEEAI_API_KEY',      modelKey: '_MODEL_ARCEEAI_API_KEY',     placeholder: ''          },
+      'Step Plan':            { key: 'STEPFUN_API_KEY',      modelKey: '_MODEL_STEPFUN_API_KEY',     placeholder: ''          },
+      'Google AI Studio':     { key: 'GEMINI_API_KEY',         modelKey: '_MODEL_GEMINI_API_KEY',         placeholder: 'AIza...'   },
+      'Fireworks AI':         { key: 'FIREWORKS_API_KEY',      modelKey: '_MODEL_FIREWORKS_API_KEY',      placeholder: 'fw_...'    },
+      'Anthropic (Claude)':   { key: 'ANTHROPIC_API_KEY',      modelKey: '_MODEL_ANTHROPIC_API_KEY',      placeholder: 'sk-ant-...' },
+      'xAI':                  { key: 'XAI_API_KEY',             modelKey: '_MODEL_XAI_API_KEY',             placeholder: 'xai-...', keyLabel: 'xAI API Key' },
+      'AWS Bedrock':          { key: 'AWS_ACCESS_KEY_ID',       modelKey: '_MODEL_AWS_ACCESS_KEY_ID',       placeholder: 'AKIA...', isBedrock: true, keyLabel: 'AWS Access Key ID' },
+      'GitHub Copilot':       { key: 'COPILOT_GITHUB_TOKEN',   modelKey: '_MODEL_COPILOT_GITHUB_TOKEN',   placeholder: 'ghp_... or gho_...', keyLabel: 'GitHub Token' },
+      'GMI Cloud':            { key: 'GMI_API_KEY',              modelKey: '_MODEL_GMI_API_KEY',              placeholder: '' },
+      'OpenCode Zen':         { key: 'OPENCODE_ZEN_API_KEY',    modelKey: '_MODEL_OPENCODE_ZEN_API_KEY',    placeholder: '' },
+      'OpenCode Go':          { key: 'OPENCODE_GO_API_KEY',     modelKey: '_MODEL_OPENCODE_GO_API_KEY',     placeholder: '' },
+      'Kilo Code':            { key: 'KILOCODE_API_KEY',         modelKey: '_MODEL_KILOCODE_API_KEY',         placeholder: '' },
+      'Ollama Cloud':         { key: 'OLLAMA_API_KEY',           modelKey: '_MODEL_OLLAMA_API_KEY',           placeholder: '' },
+      'Azure Foundry':        { key: 'AZURE_FOUNDRY_API_KEY',   modelKey: '_MODEL_AZURE_FOUNDRY_API_KEY',   placeholder: '', isAzure: true },
+      'Custom Endpoint':      { key: 'CUSTOM_PROVIDER_API_KEY',modelKey: '_MODEL_CUSTOM_PROVIDER_API_KEY',placeholder: '',         isCustom: true },
+      'xAI Grok (SuperGrok)': { key: null,                     modelKey: '_MODEL_XAI_OAUTH',              isOauth: 'xai' },
     },
+
+    xai: { loading: false, userCode: '', verificationUri: '', status: 'none', error: '' },
 
     selectedProvider: '',
 
@@ -1454,125 +1727,79 @@ function app() {
 
     get pendingCount() { return this.pending.length; },
 
-    get activeProviderName() {
-      const entries = Object.entries(this.providerMap);
-      const active = entries.find(([name,p]) =>
-        p.slug===this.vars.LLM_PROVIDER &&
-        this.vars[p.key] &&
-        this.vars[this.providerModelKey(name)]
-      );
-      const firstRegistered = entries.find(([name,p]) =>
-        this.vars[p.key] && this.vars[this.providerModelKey(name)]
-      );
-      return active?.[0] || firstRegistered?.[0] || this.selectedProvider;
-    },
-
-    get configuredProviderCount() {
-      return Object.entries(this.providerMap).filter(([name, provider]) => {
-        const model = this.vars[this.providerModelKey(name)];
-        return !!(this.vars[provider.key] && model);
-      }).length;
-    },
-
-    get managedProviderCount() {
-      return Object.values(this.status.providers||{}).filter(info => info.key_set).length;
-    },
-
-    get configuredChannelCount() {
-      return Object.values(this.status.channels||{}).filter(info => info.configured).length;
-    },
-
-    get filteredModels() {
-      const query = this.modelFilter.trim().toLowerCase();
-      if (!query) return this.availableModels;
-      return this.availableModels.filter(model =>
-        model.id.toLowerCase().includes(query) ||
-        (model.name||'').toLowerCase().includes(query)
-      );
-    },
-
-    get providerReady() {
-      const p = this.providerMap[this.selectedProvider];
-      return !!(p && this.vars[p.key] && (this.vars.LLM_MODEL||'').trim());
-    },
-
-    get providerTestPassed() {
-      return !!(
-        this.providerTest.ok &&
-        this.providerTest.fingerprint === this.providerFingerprint()
-      );
-    },
-
-    get enabledChannelNames() {
-      return Object.entries(this.channelsEnabled).filter(([,on]) => on).map(([name]) => name);
-    },
-
-    get channelsReady() {
-      const v = this.vars;
-      return this.enabledChannelNames.length > 0 && this.enabledChannelNames.every(ch => ({
-        telegram: !!v.TELEGRAM_BOT_TOKEN,
-        discord: !!v.DISCORD_BOT_TOKEN,
-        slack: !!(v.SLACK_BOT_TOKEN && v.SLACK_APP_TOKEN),
-        email: !!(v.EMAIL_ADDRESS && v.EMAIL_PASSWORD && v.EMAIL_IMAP_HOST && v.EMAIL_SMTP_HOST),
-        mattermost: !!(v.MATTERMOST_URL && v.MATTERMOST_TOKEN),
-        matrix: !!(v.MATRIX_HOMESERVER && v.MATRIX_ACCESS_TOKEN && v.MATRIX_USER_ID),
-        whatsapp: v.WHATSAPP_ENABLED === 'true',
-      })[ch]);
-    },
-
-    get channelsTestPassed() {
-      return (
-        this.enabledChannelNames.length > 0 &&
-        this.enabledChannelNames.every(channel => {
-          const result = this.channelTests[channel];
-          return result?.ok && result.fingerprint === this.channelFingerprint(channel);
-        })
-      );
-    },
-
-    get setupReady() {
-      return this.providerReady && this.providerTestPassed &&
-             this.channelsReady && this.channelsTestPassed;
+    get configuredProviders() {
+      const list = [];
+      for (const [name, p] of Object.entries(this.providerMap)) {
+        if (p.isOauth === 'xai') {
+          if (this.xai.status === 'authorized') {
+            list.push({ providerKey: name, name, model: this.vars['_MODEL_XAI_OAUTH'] || '', isOauth: true });
+          }
+        } else if (p.isCustom && this.vars[p.key]) {
+          const displayName = this.vars.CUSTOM_PROVIDER_NAME || this.vars.CUSTOM_PROVIDER_BASE_URL || 'Custom Endpoint';
+          list.push({ providerKey: name, name: displayName, model: p.modelKey ? (this.vars[p.modelKey] || '') : '', key: p.key, isCustom: true });
+        } else if (p.isAzure && this.vars[p.key] && this.vars.AZURE_FOUNDRY_BASE_URL) {
+          list.push({ providerKey: name, name, model: p.modelKey ? (this.vars[p.modelKey] || '') : '', key: p.key, isAzure: true });
+        } else if (p.key && !p.isCustom && !p.isAzure && this.vars[p.key]) {
+          list.push({ providerKey: name, name, model: p.modelKey ? (this.vars[p.modelKey] || '') : '', key: p.key, modelKey: p.modelKey || null, isBedrock: !!p.isBedrock });
+        }
+      }
+      return list;
     },
 
     get isSetupDone() {
-      const keys = Object.values(this.providerMap).map(p => p.key);
-      const providerReady = !!(this.vars.LLM_MODEL && keys.some(k => this.vars[k]));
-      const channelReady = !!(
-        this.vars.TELEGRAM_BOT_TOKEN || this.vars.DISCORD_BOT_TOKEN ||
-        this.vars.SLACK_BOT_TOKEN || this.vars.EMAIL_ADDRESS ||
-        this.vars.MATTERMOST_TOKEN || this.vars.MATRIX_ACCESS_TOKEN ||
-        this.vars.WHATSAPP_ENABLED === 'true'
-      );
-      return this.vars.SETUP_COMPLETED === 'true' || (providerReady && channelReady);
+      return this.configuredProviders.length > 0 && !!this.vars.LLM_MODEL;
     },
 
-    providerModelKey(providerName) {
-      const key = this.providerMap[providerName]?.key||'';
-      return 'LLM_MODEL_'+key.replace(/_(API_KEY|TOKEN)$/,'');
-    },
-
-    fingerprint(values) {
-      const text = JSON.stringify(values);
-      let hash = 2166136261;
-      for (let i=0; i<text.length; i++) {
-        hash ^= text.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
+    onProviderChange() {
+      const p = this.providerMap[this.selectedProvider];
+      if (!p) return;
+      // Load the per-provider stored model so the model field pre-fills.
+      const storedModel = p.modelKey ? this.vars[p.modelKey] : null;
+      if (storedModel) this.vars.LLM_MODEL = storedModel;
+      // Reset xAI flow state if switching away (unless already fully authorized).
+      if (p.isOauth !== 'xai' && this.xai.status !== 'authorized') {
+        this.xai.status = 'none';
+        this.xai.userCode = '';
+        this.xai.verificationUri = '';
+        this.xai.error = '';
       }
-      return (hash>>>0).toString(16);
     },
 
-    providerFingerprint() {
-      const provider = this.providerMap[this.selectedProvider];
-      return this.fingerprint([
-        this.selectedProvider,
-        provider ? this.vars[provider.key]||'' : '',
-        this.vars.LLM_MODEL||'',
-      ]);
+    async removeProvider(providerKey) {
+      const p = this.providerMap[providerKey];
+      if (!p) return;
+      if (!confirm(`Remove ${providerKey} provider?`)) return;
+      if (p.isOauth === 'xai') {
+        await fetch('/setup/api/oauth/xai', { method: 'DELETE' });
+        this.xai.status = 'none';
+      }
+      if (p.key)      this.vars[p.key]      = '';
+      if (p.modelKey) this.vars[p.modelKey] = '';
+      if (p.isCustom) {
+        this.vars.CUSTOM_PROVIDER_BASE_URL = '';
+        this.vars.CUSTOM_PROVIDER_NAME     = '';
+      }
+      if (p.isBedrock) {
+        this.vars.AWS_SECRET_ACCESS_KEY = '';
+        this.vars.AWS_DEFAULT_REGION    = '';
+      }
+      if (p.isAzure) {
+        this.vars.AZURE_FOUNDRY_BASE_URL = '';
+      }
+      if (this.selectedProvider === providerKey) this.selectedProvider = '';
+      try {
+        await fetch('/setup/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vars: { ...this.vars }, _restart: true }),
+        });
+      } catch {}
+      await this.loadConfig();
+      this.notify(`${providerKey} removed`, true);
     },
 
-    channelKeys(channel) {
-      return {
+    clearChannel(ch) {
+      const keysMap = {
         telegram:   ['TELEGRAM_BOT_TOKEN','TELEGRAM_ALLOWED_USERS'],
         discord:    ['DISCORD_BOT_TOKEN','DISCORD_ALLOWED_USERS'],
         slack:      ['SLACK_BOT_TOKEN','SLACK_APP_TOKEN'],
@@ -1580,43 +1807,8 @@ function app() {
         mattermost: ['MATTERMOST_URL','MATTERMOST_TOKEN'],
         matrix:     ['MATRIX_HOMESERVER','MATRIX_ACCESS_TOKEN','MATRIX_USER_ID'],
         whatsapp:   ['WHATSAPP_ENABLED'],
-      }[channel]||[];
-    },
-
-    channelFingerprint(channel) {
-      return this.fingerprint([
-        channel,
-        ...this.channelKeys(channel).map(key => this.vars[key]||''),
-      ]);
-    },
-
-    updateProviderModel(value) {
-      this.vars.LLM_MODEL = value;
-      if (this.selectedProvider) this.vars[this.providerModelKey(this.selectedProvider)] = value;
-    },
-
-    selectModel(modelId) {
-      this.updateProviderModel(modelId);
-      this.modelDropdownOpen = false;
-      this.modelFilter = '';
-    },
-
-    onProviderChange() {
-      if (this.editingProvider) {
-        this.vars[this.providerModelKey(this.editingProvider)] = this.vars.LLM_MODEL||'';
-      }
-      this.providerTest = { ok:false, message:'' };
-      this.availableModels = [];
-      this.modelLoadMessage = '';
-      this.modelDropdownOpen = false;
-      this.modelFilter = '';
-      this.vars.LLM_MODEL = this.vars[this.providerModelKey(this.selectedProvider)]||'';
-      this.editingProvider = this.selectedProvider;
-    },
-
-    clearChannel(ch) {
-      delete this.channelTests[ch];
-      for (const k of this.channelKeys(ch)) this.vars[k] = '';
+      };
+      for (const k of keysMap[ch] || []) this.vars[k] = '';
     },
 
     clearTool(t) {
@@ -1624,210 +1816,43 @@ function app() {
       if (t.key === 'BROWSERBASE_API_KEY') this.vars.BROWSERBASE_PROJECT_ID = '';
     },
 
-    async openSetup() {
-      this.page = 'setup';
-      await Promise.all([this.loadConfig(),this.loadStatus()]);
-      this.setupMode = this.isSetupDone ? 'summary' : 'initial';
-      this.wizardStep = 1;
-      this.providerTest = {ok:false,message:''};
-      this.channelTests = {};
-    },
-
-    beginAddProvider() {
-      this.activeModelBeforeAction = this.vars.LLM_MODEL||'';
-      this.setupMode = 'provider';
-      this.selectedProvider = '';
-      this.editingProvider = '';
-      this.vars.LLM_MODEL = '';
-      this.wizardStep = 1;
-      this.providerTest = {ok:false,message:''};
-      this.availableModels = [];
-      this.modelLoadMessage = '';
-    },
-
-    beginAddChannel() {
-      this.setupMode = 'channel';
-      this.channelsEnabled = {
-        telegram:false, discord:false, slack:false, email:false,
-        mattermost:false, matrix:false, whatsapp:false,
-      };
-      this.channelTests = {};
-      this.wizardStep = 2;
-    },
-
-    async cancelSetupAction() {
-      await this.loadConfig();
-      this.setupMode = 'summary';
-      this.providerTest = {ok:false,message:''};
-      this.channelTests = {};
-    },
-
-    requestManagedRemoval(type, name) {
-      this.removeModal = {open:true,type,name,removing:false};
-    },
-
-    async confirmManagedRemoval() {
-      const {type,name} = this.removeModal;
-      this.removeModal.removing = true;
-      const endpoint = type==='provider' ? '/api/provider/remove' : '/api/channel/remove';
-      const body = type==='provider' ? {provider:name} : {channel:name};
+    async startXaiOauth() {
+      this.xai.loading = true;
+      this.xai.error = '';
       try {
-        const response = await fetch(endpoint, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(body),
+        const r = await fetch('/setup/api/oauth/xai/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: this.vars.LLM_MODEL || 'grok-4.3' }),
         });
-        const data = await response.json().catch(()=>({}));
-        if (!response.ok) {
-          this.removeModal.removing = false;
-          this.notify(data.error||'Could not remove configuration',false);
-          return;
-        }
-        this.removeModal = {open:false,type:'',name:'',removing:false};
-        await Promise.all([this.loadConfig(),this.loadStatus()]);
-        this.notify(
-          type==='channel' && data.restarting ? `${name} removed — gateway restarting` : `${name} removed`,
-          true,
-        );
-      } catch(e) {
-        this.removeModal.removing = false;
-        this.notify('Could not remove configuration: '+e.message,false);
-      }
-    },
-
-    goWizardStep(step) {
-      if (step > 1 && !this.providerReady) {
-        this.notify('Select a provider, API key, and model first', false);
-        this.wizardStep = 1;
-        return;
-      }
-      if (step > 1 && !this.providerTestPassed) {
-        this.notify('Test the provider connection successfully before continuing', false);
-        this.wizardStep = 1;
-        return;
-      }
-      if (step > 2 && !this.channelsReady) {
-        this.notify('Enable and complete at least one channel', false);
-        this.wizardStep = 2;
-        return;
-      }
-      if (step > 2 && !this.channelsTestPassed) {
-        this.notify('All enabled channels must pass the connection test', false);
-        this.wizardStep = 2;
-        return;
-      }
-      this.wizardStep = Math.max(1, Math.min(3, step));
-      if (this.wizardStep === 3) this.runDiagnostics();
-    },
-
-    async testProvider() {
-      if (!this.providerReady) return;
-      this.testingProvider = true;
-      this.providerTest = {ok:false,message:''};
-      const p = this.providerMap[this.selectedProvider];
-      try {
-        const r = await fetch('/api/setup/test-provider', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({provider:this.selectedProvider, model:this.vars.LLM_MODEL, api_key:this.vars[p.key]}),
-        });
-        const d = await r.json().catch(()=>({}));
-        this.providerTest = {
-          ok:r.ok && d.ok,
-          message:(r.ok && d.ok ? `Connected in ${d.latency_ms} ms` : (d.error||'Connection failed')),
-          fingerprint:this.providerFingerprint(),
-        };
-        if (this.providerTest.ok) await this.loadProviderModels();
-      } catch(e) {
-        this.providerTest = {ok:false,message:'Connection failed: '+e.message};
-      }
-      this.testingProvider = false;
-    },
-
-    async loadProviderModels() {
-      const p = this.providerMap[this.selectedProvider];
-      if (!p || !this.vars[p.key]) return;
-      this.loadingModels = true;
-      this.availableModels = [];
-      this.modelLoadMessage = '';
-      try {
-        const r = await fetch('/api/setup/models', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({provider:this.selectedProvider,api_key:this.vars[p.key]}),
-        });
-        const d = await r.json().catch(()=>({}));
-        if (r.ok && d.ok) {
-          this.availableModels = d.models||[];
-          this.modelLoadMessage = this.availableModels.length
-            ? `${this.availableModels.length} models loaded from ${this.selectedProvider}`
-            : 'Provider returned no compatible chat models';
-          this.modelFilter = '';
-          this.modelDropdownOpen = false;
-        } else {
-          this.modelLoadMessage = d.error||'Could not load models';
-        }
-      } catch(e) {
-        this.modelLoadMessage = 'Could not load models: '+e.message;
-      }
-      this.loadingModels = false;
-    },
-
-    async testChannels() {
-      if (!this.channelsReady) {
-        this.notify('Complete all required fields for enabled channels', false);
-        return;
-      }
-      this.testingChannels = true;
-      this.channelTests = {};
-      for (const channel of this.enabledChannelNames) {
-        this.channelTests[channel] = {ok:false,message:'Testing…'};
-        try {
-          const r = await fetch('/api/setup/test-channel', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({channel,vars:{...this.vars}}),
-          });
-          const d = await r.json().catch(()=>({}));
-          this.channelTests[channel] = {
-            ok:r.ok && d.ok,
-            message:(r.ok && d.ok ? `${d.message} (${d.latency_ms} ms)` : (d.error||'Connection failed')),
-            fingerprint:this.channelFingerprint(channel),
-          };
-        } catch(e) {
-          this.channelTests[channel] = {ok:false,message:'Connection failed: '+e.message};
-        }
-      }
-      this.testingChannels = false;
-    },
-
-    async runDiagnostics() {
-      this.diagnosing = true;
-      try {
-        const r = await fetch('/api/diagnostics', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({vars:{...this.vars}}),
-        });
-        const d = await r.json().catch(()=>({checks:[]}));
-        this.diagnostics = d;
-      } catch(e) {
-        this.diagnostics = {checks:[{name:'Dashboard API',ok:false,level:'error',detail:e.message}],summary:{}};
-      }
-      this.diagnosing = false;
+        const d = await r.json();
+        if (!r.ok) { this.xai.error = d.error || 'Failed to start OAuth'; this.xai.loading = false; return; }
+        this.xai.userCode = d.user_code;
+        this.xai.verificationUri = d.verification_uri;
+        this.xai.status = 'pending';
+        window.open(d.verification_uri, '_blank');
+        const poll = setInterval(async () => {
+          const s = await fetch('/setup/api/oauth/xai/status').then(r2 => r2.json()).catch(() => ({ status: 'pending' }));
+          this.xai.status = s.status;
+          if (s.status === 'authorized') {
+            clearInterval(poll);
+            await this.loadConfig();
+          } else if (s.status === 'error' || s.status === 'expired') {
+            this.xai.error = s.error || 'Authorization failed or expired';
+            clearInterval(poll);
+          }
+        }, 3000);
+      } catch (e) { this.xai.error = 'Network error: ' + e.message; }
+      this.xai.loading = false;
     },
 
     async init() {
-      if (!window.__hermesAuthFetchInstalled) {
-        const originalFetch = window.fetch.bind(window);
-        window.fetch = async (...args) => {
-          const response = await originalFetch(...args);
-          if (response.status === 401) {
-            window.location.replace('/login?expired=1');
-            throw new Error('Session expired');
-          }
-          return response;
-        };
-        window.__hermesAuthFetchInstalled = true;
-      }
-      await Promise.all([this.loadConfig(), this.loadStatus(), this.loadLogs(), this.loadPairing()]);
-      this.setupMode = this.isSetupDone ? 'summary' : 'initial';
-      this.wizardStep = 1;
+      // Swallow drops that miss the drop zone. Without this the browser
+      // navigates away to the dropped file, silently abandoning a half-filled
+      // setup form — and on the Backup page that looks like the restore blew up.
+      ['dragover','drop'].forEach(evt =>
+        window.addEventListener(evt, e => { e.preventDefault(); }, false));
+      await Promise.all([this.loadConfig(), this.loadStatus(), this.loadLogs(), this.loadPairing(), this.loadSnapshots()]);
       setInterval(() => this.loadStatus(),  5000);
       setInterval(() => this.loadLogs(),    3000);
       setInterval(() => this.loadPairing(), 5000);
@@ -1835,20 +1860,13 @@ function app() {
 
     async loadConfig() {
       try {
-        const r = await fetch('/api/config');
+        const r = await fetch('/setup/api/config');
         if (r.ok) {
           const d = await r.json();
           this.vars = d.vars || {};
-          // Detect active provider
-          const entries = Object.entries(this.providerMap);
-          const active = entries.find(([,p]) => p.slug===this.vars.LLM_PROVIDER);
-          const configured = entries.find(([,p]) => this.vars[p.key]);
-          this.selectedProvider = (active||configured||['',{}])[0];
-          this.editingProvider = this.selectedProvider;
-          if (this.selectedProvider) {
-            const modelKey = this.providerModelKey(this.selectedProvider);
-            this.vars.LLM_MODEL = this.vars[modelKey]||this.vars.LLM_MODEL||'';
-          }
+          // Refresh xAI OAuth status (drives configuredProviders computed getter).
+          const xs = await fetch('/setup/api/oauth/xai/status').then(r2 => r2.json()).catch(() => ({ status: 'none' }));
+          this.xai.status = xs.status;
           // Detect active channels
           this.channelsEnabled = {
             telegram:   !!(this.vars.TELEGRAM_BOT_TOKEN),
@@ -1863,85 +1881,51 @@ function app() {
           for (const t of this.tools) {
             this.toolsEnabled[t.key] = !!(this.vars[t.key]);
           }
+          // savedConfigComplete: server has at least one provider + model.
+          this.savedConfigComplete = !!(this.vars.LLM_MODEL && this.configuredProviders.length > 0);
         }
       } catch {}
     },
 
     async saveConfig() {
       this.saving = true;
+      // Sync per-provider model key so the configured list shows the right model.
+      const p = this.selectedProvider ? this.providerMap[this.selectedProvider] : null;
+      if (p && this.vars.LLM_MODEL) {
+        if (p.modelKey) this.vars[p.modelKey] = this.vars.LLM_MODEL;
+      }
       try {
-        const mode = this.setupMode;
-        const providerWasTested = this.providerTestPassed;
-        const testedChannels = Object.fromEntries(
-          this.enabledChannelNames.map(channel => [channel, {
-            passed:!!(
-              this.channelTests[channel]?.ok &&
-              this.channelTests[channel]?.fingerprint === this.channelFingerprint(channel)
-            ),
-          }])
-        );
-        const payloadVars = {...this.vars};
-        let shouldRestart = mode === 'channel' || (mode === 'initial' && this.restartOnSave);
-        if ((mode === 'initial' || mode === 'provider') && this.selectedProvider) {
-          const provider = this.providerMap[this.selectedProvider];
-          payloadVars[this.providerModelKey(this.selectedProvider)] = this.vars.LLM_MODEL||'';
-          const activeEntry = Object.entries(this.providerMap).find(([,item]) => item.slug===payloadVars.LLM_PROVIDER);
-          const activeIsRegistered = !!(
-            activeEntry &&
-            payloadVars[activeEntry[1].key] &&
-            payloadVars[this.providerModelKey(activeEntry[0])]
-          );
-          if (mode === 'initial' || !activeIsRegistered) {
-            payloadVars.LLM_PROVIDER = provider.slug;
-            payloadVars.LLM_MODEL = this.vars.LLM_MODEL||'';
-          } else if (provider.slug === payloadVars.LLM_PROVIDER) {
-            payloadVars.LLM_MODEL = this.vars.LLM_MODEL||'';
-            shouldRestart = this.gw.state === 'running';
-          } else {
-            payloadVars.LLM_MODEL = this.activeModelBeforeAction;
-          }
-        }
-        if (mode === 'initial') {
-          payloadVars.SETUP_COMPLETED = 'true';
-        }
-        const r = await fetch('/api/config', {
+        const r = await fetch('/setup/api/config', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vars: payloadVars, _restart: shouldRestart }),
+          body: JSON.stringify({
+            vars: { ...this.vars },
+            _restart: this.restartOnSave,
+            // Tells the backend which provider's key/model pair this save
+            // action just edited, so it can pin config.yaml's model.provider
+            // to that exact provider (via hermes' own POST /api/model/set)
+            // instead of leaving it on "auto" — which becomes ambiguous as
+            // soon as a second provider key exists. Empty when the user
+            // saved without touching a provider (e.g. just a channel toggle).
+            _active_provider_key: (p && p.key) ? p.key : '',
+          }),
         });
         if (r.ok) {
-          const savedLabel = mode === 'provider' ? 'Provider saved' :
-                             mode === 'channel' ? 'Channels saved' : 'Setup saved';
-          this.notify(shouldRestart ? savedLabel+' — gateway is restarting' : savedLabel, true);
+          const d = await r.json().catch(() => ({}));
+          this.notify(d && d.warning ? `Saved, but: ${d.warning}` : 'Saved', !(d && d.warning));
+          this.selectedProvider = '';
           await this.loadConfig();
-          if (providerWasTested && this.providerTest.ok) {
-            this.providerTest.fingerprint = this.providerFingerprint();
-          }
-          for (const channel of this.enabledChannelNames) {
-            if (testedChannels[channel]?.passed && this.channelTests[channel]?.ok) {
-              this.channelTests[channel].fingerprint = this.channelFingerprint(channel);
-            }
-          }
-          this.setupMode = 'summary';
-          this.page = 'status';
-          setTimeout(() => { this.loadStatus(); this.runDiagnostics(); }, shouldRestart ? 1500 : 0);
-        }
-        else { const e = await r.json().catch(()=>{}); this.notify(e?.error||'Save failed', false); }
+        } else { const e = await r.json().catch(()=>{}); this.notify(e?.error||'Save failed', false); }
       } catch(e) { this.notify('Save failed: '+e.message, false); }
       this.saving = false;
     },
 
     async resetConfig() {
       if (!confirm('Reset all configuration? This will stop the gateway and clear all saved settings.')) return;
-      const r = await fetch('/api/config/reset', { method: 'POST' });
+      const r = await fetch('/setup/api/config/reset', { method: 'POST' });
       if (r.ok) {
         await this.loadConfig();
         this.selectedProvider = '';
-        this.setupMode = 'initial';
-        this.wizardStep = 1;
-        this.providerTest = {ok:false,message:''};
-        this.channelTests = {};
-        this.diagnostics = {checks:[],summary:{}};
         this.page = 'setup';
         this.notify('Config reset', true);
       } else {
@@ -1951,14 +1935,18 @@ function app() {
 
     async loadStatus() {
       try {
-        const r = await fetch('/api/status');
-        if (r.ok) { const d = await r.json(); this.status = d; this.gw = d.gateway||{}; }
+        const r = await fetch('/setup/api/status');
+        if (r.ok) {
+          const d = await r.json();
+          this.status = d; this.gw = d.gateway||{};
+          if (d.hermes_version) this.hermesVersion = d.hermes_version;
+        }
       } catch {}
     },
 
     async loadLogs() {
       try {
-        const r = await fetch('/api/logs');
+        const r = await fetch('/setup/api/logs');
         if (r.ok) {
           const d = await r.json();
           const box = this.$refs.logbox;
@@ -1971,65 +1959,133 @@ function app() {
 
     async loadPairing() {
       try {
-        const [pr, ar] = await Promise.all([fetch('/api/pairing/pending'), fetch('/api/pairing/approved')]);
+        const [pr, ar] = await Promise.all([fetch('/setup/api/pairing/pending'), fetch('/setup/api/pairing/approved')]);
         if (pr.ok) this.pending  = (await pr.json()).pending||[];
         if (ar.ok) this.approved = (await ar.json()).approved||[];
       } catch {}
     },
 
-    async startGw()        { await fetch('/api/gateway/start',   {method:'POST'}); this.notify('Starting…',   true); setTimeout(()=>this.loadStatus(),1000); },
-    async stopGw()         { await fetch('/api/gateway/stop',    {method:'POST'}); this.notify('Stopping…',   true); setTimeout(()=>this.loadStatus(),1000); },
-    async restartGateway() { await fetch('/api/gateway/restart', {method:'POST'}); this.notify('Restarting…', true); setTimeout(()=>this.loadStatus(),2000); },
+    async startGw()        { await fetch('/setup/api/gateway/start',   {method:'POST'}); this.notify('Starting…',   true); setTimeout(()=>this.loadStatus(),1000); },
+    async stopGw()         { await fetch('/setup/api/gateway/stop',    {method:'POST'}); this.notify('Stopping…',   true); setTimeout(()=>this.loadStatus(),1000); },
+    async restartGateway() { await fetch('/setup/api/gateway/restart', {method:'POST'}); this.notify('Restarting…', true); setTimeout(()=>this.loadStatus(),2000); },
 
-    async activateProvider(name) {
-      try {
-        const r = await fetch('/api/provider/activate', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({provider:name}),
-        });
-        const d = await r.json().catch(()=>({}));
-        if (!r.ok) {
-          this.notify(d.error||'Could not switch provider', false);
-          return;
-        }
-        await Promise.all([this.loadStatus(),this.loadConfig()]);
-        if (d.restart_recommended) {
-          this.switchModal = {open:true,provider:d.provider,model:d.model};
-        } else {
-          this.notify(`${d.provider} is now active`, true);
-        }
-      } catch(e) {
-        this.notify('Could not switch provider: '+e.message, false);
-      }
-    },
-
-    async restartAfterSwitch() {
-      this.switchModal.open = false;
-      await this.restartGateway();
-    },
-
-    async logout() {
-      this.logoutModal = true;
-    },
-
-    confirmLogout() {
-      this.logoutModal = false;
-      window.location.assign('/logout');
-    },
-
-    async approve(platform, request_id) {
-      const r = await fetch('/api/pairing/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,request_id}) });
+    async approve(platform, code) {
+      const r = await fetch('/setup/api/pairing/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,code}) });
       if (r.ok) { this.notify('User approved', true); await this.loadPairing(); }
       else { const e = await r.json().catch(()=>{}); this.notify(e?.error||'Failed', false); }
     },
-    async deny(platform, request_id) {
-      await fetch('/api/pairing/deny', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,request_id}) });
+    async deny(platform, code) {
+      await fetch('/setup/api/pairing/deny', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,code}) });
       this.notify('Denied', true); await this.loadPairing();
     },
     async revoke(platform, user_id) {
       if (!confirm('Revoke access for this user?')) return;
-      await fetch('/api/pairing/revoke', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,user_id}) });
+      await fetch('/setup/api/pairing/revoke', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,user_id}) });
       this.notify('Revoked', true); await this.loadPairing();
+    },
+
+    async downloadBackup() {
+      this.backupBusy = true;
+      try {
+        const r = await fetch('/setup/api/backup/download');
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          this.notify(e?.error || 'Backup failed', false);
+          return;
+        }
+        // Set by the server when the archive is missing state.db — hermes can
+        // now drop it and still exit 0, so a "successful" backup may not be a
+        // usable one. Surface it rather than hand over a silent partial.
+        const backupWarning = r.headers.get('x-backup-warning');
+        const blob = await r.blob();
+        const disposition = r.headers.get('content-disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : `hermes-backup-${Date.now()}.zip`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        this.notify(backupWarning || 'Backup downloaded', !backupWarning);
+      } catch (e) {
+        this.notify('Backup failed: ' + e.message, false);
+      }
+      this.backupBusy = false;
+    },
+
+    async loadSnapshots() {
+      try {
+        const r = await fetch('/setup/api/backup/snapshots');
+        if (r.ok) this.snapshots = (await r.json()).snapshots || [];
+      } catch {}
+    },
+
+    // Single entry point for both the drop and the file picker, so validation
+    // can't diverge between them.
+    setRestoreFile(file) {
+      if (!file) return;
+      if (!/\.zip$/i.test(file.name)) {
+        this.notify('That is not a .zip — pick the file produced by Download Backup', false);
+        return;
+      }
+      if (file.size === 0) {
+        this.notify('That file is empty', false);
+        return;
+      }
+      this.restoreFile = file;
+    },
+
+    clearRestoreFile() {
+      this.restoreFile = null;
+      if (this.$refs.restoreInput) this.$refs.restoreInput.value = '';
+    },
+
+    async restoreBackup() {
+      if (!this.restoreFile) return;
+      if (!confirm('Restore from this backup? This overwrites the current config, credentials, and data on this deployment, and briefly restarts the gateway. A safety snapshot of the current state is taken first.')) return;
+      this.restoreBusy = true;
+      try {
+        const fd = new FormData();
+        fd.append('file', this.restoreFile);
+        const r = await fetch('/setup/api/backup/restore', { method: 'POST', body: fd });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) {
+          this.notify(d.warning ? `Restored, but: ${d.warning}` : 'Restore complete', !d.warning);
+          this.setRestoreResult(d.warning
+            ? { ok: false, warn: true, msg: `Restored, but: ${d.warning}` }
+            : { ok: true, msg: 'Restore complete — your config and data were replaced and the gateway restarted.' });
+          this.restoreFile = null;
+          if (this.$refs.restoreInput) this.$refs.restoreInput.value = '';
+          await Promise.all([this.loadConfig(), this.loadStatus(), this.loadSnapshots()]);
+        } else {
+          this.notify(d.error || 'Restore failed', false);
+          this.setRestoreResult({ ok: false, msg: d.error || 'Restore failed' });
+        }
+      } catch (e) {
+        this.notify('Restore failed: ' + e.message, false);
+        this.setRestoreResult({ ok: false, msg: 'Restore failed: ' + e.message });
+      }
+      this.restoreBusy = false;
+    },
+
+    // Inline outcome shown in the Restore card. The toast alone is easy to miss:
+    // a restore can take a while, and a 3s message in the corner is gone by the
+    // time you look back — leaving no sign anything happened. Success clears
+    // itself; failures and warnings stay put until the next attempt, because a
+    // message you never read is the same as no message.
+    setRestoreResult(res) {
+      clearTimeout(this._restoreResultTimer);
+      this.restoreResult = res;
+      if (res && res.ok) {
+        this._restoreResultTimer = setTimeout(() => { this.restoreResult = null; }, 6000);
+      }
+    },
+
+    fmtBytes(n) {
+      if (n == null) return '—';
+      if (n < 1024) return n + ' B';
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+      return (n / 1024 / 1024).toFixed(1) + ' MB';
     },
 
     fmtDate(ts) {
