@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Hermes Agent</title>
+<script>
+  (() => {
+    try {
+      const saved = localStorage.getItem('hermes-theme');
+      const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = saved || preferred;
+    } catch (_) {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-50..200&display=swap" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+:root {
+  --ink:        #0b0e14;
+  --slate:      #12151d;
+  --slate-2:    #191d28;
+  --slate-3:    #202537;
+  --hairline:   #262b3b;
+  --text:       #e7e4da;
+  --text-dim:   #8991a6;
+  --gold:       #e3a53d;
+  --gold-2:     #f0c37a;
+  --gold-wash:  rgba(227,165,61,.12);
+  --teal:       #45c2a8;
+  --teal-wash:  rgba(69,194,168,.12);
+  --amber:      #d9a441;
+  --amber-wash: rgba(217,164,65,.12);
+  --coral:      #e2685f;
+  --coral-wash: rgba(226,104,95,.12);
+  --log-bg:     #080a0e;
+  --overlay:    rgba(6,8,12,.72);
+  --shadow:     rgba(0,0,0,.5);
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-sans:    'Inter', ui-sans-serif, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  --sidebar-w:  232px;
+  --header-h:   58px;
+  --bottomnav-h: 64px;
+  --radius:     14px;
+  --radius-sm:  9px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --ink:        #f5f3ee;
+  --slate:      #ffffff;
+  --slate-2:    #f0ede4;
+  --slate-3:    #e7e2d5;
+  --hairline:   #ddd6c4;
+  --text:       #262218;
+  --text-dim:   #736c5c;
+  --gold:       #b57a1e;
+  --gold-2:     #8f5f14;
+  --gold-wash:  rgba(181,122,30,.10);
+  --teal:       #1c8a76;
+  --teal-wash:  rgba(28,138,118,.09);
+  --amber:      #96691b;
+  --amber-wash: rgba(150,105,27,.09);
+  --coral:      #c34a41;
+  --coral-wash: rgba(195,74,65,.09);
+  --log-bg:     #ede9dd;
+  --overlay:    rgba(38,34,24,.35);
+  --shadow:     rgba(60,50,30,.14);
+  color-scheme: light;
+}
+
+* , *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+[x-cloak] { display: none !important; }
+a { color: var(--gold-2); }
+::selection { background: var(--gold-wash); color: var(--text); }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--slate-3); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.icon.sm { font-size: 16px; }
+.icon.lg { font-size: 26px; }
+.icon.fill { font-variation-settings: 'FILL' 1; }
+
+/* ── Header ─────────────────────────────────────────────── */
+#header {
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  background: linear-gradient(180deg, var(--slate), var(--slate) 70%, transparent);
+  border-bottom: 1px solid var(--hairline);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.brand-mark {
+  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  display: grid; place-items: center;
+  box-shadow: 0 3px 10px var(--gold-wash);
+}
+.brand-mark .icon { color: #1a1206; font-size: 19px; }
+.logo {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.logo span { color: var(--text-dim); font-weight: 400; }
+.status-pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 11px 5px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 100px;
+  background: var(--slate-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-dim);
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-dim);
+  box-shadow: 0 0 0 3px transparent;
+}
+.status-dot.running { background: var(--teal); animation: pulse-dot 2s ease-in-out infinite; }
+.status-dot.error, .status-dot.crashed { background: var(--coral); }
+.status-dot.starting, .status-dot.stopping { background: var(--amber); }
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(69,194,168,.45); }
+  50%      { box-shadow: 0 0 0 4px rgba(69,194,168,0); }
+}
+.header-spacer { flex: 1; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--slate-2);
+  color: var(--text);
+  cursor: pointer;
+  font: 500 12px var(--font-sans);
+  transition: border-color .15s, background .15s, color .15s;
+}
+.icon-btn:hover { border-color: var(--gold); color: var(--gold-2); }
+.icon-btn.square { width: 34px; padding: 0; }
+.icon-btn .label { display: inline; }
+@media (max-width: 640px) { .icon-btn .label { display: none; } .icon-btn { width: 34px; padding: 0; } }
+
+/* ── Layout ─────────────────────────────────────────────── */
+#layout { display: flex; min-height: calc(100vh - var(--header-h)); }
+
+#sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--hairline);
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+}
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--text-dim);
+  padding: 10px 10px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 13px;
+  position: relative;
+  transition: background .15s, color .15s;
+}
+.nav-item:hover { background: var(--slate-2); color: var(--text); }
+.nav-item.active { background: var(--gold-wash); color: var(--gold-2); }
+.nav-item.active .icon { font-variation-settings: 'FILL' 1; }
+.nav-item.locked { opacity: .4; cursor: not-allowed; }
+.nav-item.locked:hover { background: none; color: var(--text-dim); }
+.nav-item.danger:hover { background: var(--coral-wash); color: var(--coral); }
+.nav-item.warning:hover { background: var(--amber-wash); color: var(--amber); }
+.nav-badge {
+  margin-left: auto;
+  min-width: 17px; height: 17px; padding: 0 5px;
+  border-radius: 100px;
+  background: var(--coral);
+  color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+}
+.nav-badge.visible { display: flex; }
+.nav-divider { height: 1px; background: var(--hairline); margin: 10px 4px; }
+.sidebar-actions { display: flex; flex-direction: column; gap: 2px; }
+
+#main { flex: 1; min-width: 0; padding: 26px 32px 60px; }
+
+.panel { display: none; }
+.panel.active { display: block; animation: fade-up .25s ease; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.panel-header { margin-bottom: 22px; }
+.panel-title { font-family: var(--font-display); font-size: 23px; font-weight: 600; }
+.panel-subtitle { color: var(--text-dim); font-size: 13px; margin-top: 3px; }
+
+/* ── Cards & sections ───────────────────────────────────── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  margin: 22px 0 9px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label:first-child { margin-top: 0; }
+.req-note { text-transform: none; letter-spacing: 0; font-family: var(--font-sans); color: var(--gold); font-size: 11.5px; }
+
+.card {
+  background: var(--slate);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card-title { font-size: 13.5px; font-weight: 600; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-card {
+  background: var(--slate);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px 15px;
+}
+.stat-label { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin-bottom: 7px; }
+.stat-value { font-family: var(--font-display); font-size: 21px; font-weight: 600; }
+.stat-value.green { color: var(--teal); }
+.stat-value.red { color: var(--coral); }
+.stat-value.yellow { color: var(--amber); }
+
+.empty-state {
+  padding: 26px 14px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.hint { color: var(--text-dim); font-size: 12px; line-height: 1.5; margin: 5px 0 0; }
+
+/* ── Forms ──────────────────────────────────────────────── */
+.field-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.field-gap { margin-top: 14px; }
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 720px) { .field-grid-2 { grid-template-columns: 1fr; } }
+
+input[type="text"], input[type="password"], select {
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--ink);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: 13px var(--font-sans);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-wash); }
+input::placeholder { color: var(--text-dim); }
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238991a6'%3E%3Cpath d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+code { font-family: var(--font-mono); background: var(--slate-2); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 9px 15px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--slate-2);
+  color: var(--text);
+  font: 600 12.5px var(--font-sans);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s, opacity .15s;
+}
+.btn:hover { border-color: var(--gold); color: var(--gold-2); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--hairline); color: var(--text); }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1206; }
+.btn.primary:hover { background: var(--gold-2); border-color: var(--gold-2); color: #1a1206; }
+.btn.danger { border-color: var(--coral); color: var(--coral); }
+.btn.danger:hover { background: var(--coral-wash); }
+.btn.success { border-color: var(--teal); color: var(--teal); }
+.btn.success:hover { background: var(--teal-wash); }
+.btn.sm { padding: 6px 11px; font-size: 11.5px; }
+
+/* ── Chips ──────────────────────────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--slate-2);
+  color: var(--text-dim);
+  border: 1px solid var(--hairline);
+}
+.chip.green { background: var(--teal-wash); color: var(--teal); border-color: transparent; }
+.chip.dim { color: var(--text-dim); }
+
+/* ── Toggle rows (channels/tools) ───────────────────────── */
+.toggle-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--hairline);
+  cursor: pointer;
+}
+.toggle-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--gold); cursor: pointer; }
+.toggle-row .icon { color: var(--text-dim); }
+.toggle-label { font-weight: 500; font-size: 13.5px; }
+.toggle-body {
+  padding: 4px 2px 16px 30px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* ── Wizard ─────────────────────────────────────────────── */
+.wizard-steps { display: flex; gap: 8px; margin-bottom: 18px; }
+.wizard-step {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--slate);
+  color: var(--text-dim);
+  font: 600 11.5px var(--font-mono);
+  text-align: center;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.wizard-step span { text-transform: none; font-family: var(--font-sans); letter-spacing: 0; }
+.wizard-step.active { border-color: var(--gold); color: var(--gold-2); background: var(--gold-wash); }
+.wizard-step.done { color: var(--teal); }
+
+.provider-guide {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  margin-top: 12px; padding: 11px 13px;
+  background: var(--slate-2); border-radius: var(--radius-sm);
+}
+.provider-guide a { font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+.model-picker { position: relative; margin-top: 6px; }
+.model-dropdown {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--slate); border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 10px; box-shadow: 0 16px 40px var(--shadow);
+}
+.model-dropdown input { margin-bottom: 8px; }
+.model-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.model-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 9px; border-radius: 8px; border: none; background: none;
+  color: var(--text); text-align: left; cursor: pointer; font: 12.5px var(--font-mono);
+}
+.model-option:hover { background: var(--slate-2); }
+.model-option.selected { background: var(--gold-wash); color: var(--gold-2); }
+.model-context { font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
+
+.test-result {
+  margin-top: 10px; padding: 9px 12px;
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm);
+  font-size: 12px; line-height: 1.5;
+  background: var(--slate-2);
+}
+.test-result.ok  { border-color: var(--teal); color: var(--teal); background: var(--teal-wash); }
+.test-result.err { border-color: var(--coral); color: var(--coral); background: var(--coral-wash); }
+
+.diagnostic-row { display: flex; align-items: flex-start; gap: 11px; padding: 11px 2px; border-bottom: 1px solid var(--hairline); font-size: 13px; }
+.diagnostic-row:last-child { border-bottom: none; }
+.diagnostic-icon.ok { color: var(--teal); }
+.diagnostic-icon.warning { color: var(--amber); }
+.diagnostic-icon.error { color: var(--coral); }
+
+.save-bar {
+  position: sticky; bottom: 0;
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 22px; padding: 14px 16px;
+  background: var(--slate);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px var(--shadow);
+}
+.save-bar > .btn:first-child:not(.primary) { margin-right: auto; }
+
+.action-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+
+/* ── Provider switch ────────────────────────────────────── */
+.provider-switch {
+  width: 38px; height: 21px; border-radius: 100px;
+  border: 1px solid var(--hairline); background: var(--slate-2);
+  position: relative; cursor: pointer; flex-shrink: 0;
+}
+.provider-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 15px; height: 15px; border-radius: 50%; background: var(--text-dim);
+  transition: transform .15s, background .15s;
+}
+.provider-switch.on { background: var(--teal-wash); border-color: var(--teal); }
+.provider-switch.on::after { transform: translateX(17px); background: var(--teal); }
+.provider-switch:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Logs ───────────────────────────────────────────────── */
+#log-view {
+  height: calc(100vh - var(--header-h) - 118px);
+  overflow-y: auto;
+  background: var(--log-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.log-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Users / pairing ────────────────────────────────────── */
+.pair-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 13px 15px; margin-bottom: 8px;
+  background: var(--slate); border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.pair-card.pending { border-left: 3px solid var(--amber); }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  text-align: left; font-family: var(--font-mono); font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim);
+  padding: 10px 14px; border-bottom: 1px solid var(--hairline);
+}
+.data-table td { padding: 11px 14px; border-bottom: 1px solid var(--hairline); font-size: 13px; }
+.data-table tr:last-child td { border-bottom: none; }
+
+/* ── Modals ─────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: var(--overlay);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; z-index: 100;
+}
+.modal {
+  width: min(440px, 100%);
+  background: var(--slate);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: 0 24px 70px var(--shadow);
+}
+.modal-close {
+  margin-left: auto; width: 30px; height: 30px; border-radius: 8px;
+  border: none; background: var(--slate-2); color: var(--text-dim);
+  display: grid; place-items: center; cursor: pointer;
+}
+.modal-close:hover { color: var(--text); }
+
+.donate-modal { width: min(620px, 100%); }
+.donate-modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.donate-modal-header .icon { color: var(--coral); }
+.donate-intro { color: var(--text-dim); font-size: 13px; line-height: 1.55; margin: 10px 0 18px; }
+.donate-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.donate-option {
+  background: var(--slate-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm);
+  padding: 14px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.donate-option-icon { width: 34px; height: 34px; border-radius: 8px; overflow: hidden; background: #fff; display: grid; place-items: center; }
+.donate-option-icon img { width: 22px; height: 22px; object-fit: contain; }
+.donate-option-name { font-weight: 600; font-size: 13px; }
+.donate-option-copy { color: var(--text-dim); font-size: 11px; line-height: 1.4; }
+.donate-qr { width: 90px; height: 90px; border-radius: 8px; margin: 4px 0; background: #fff; padding: 4px; }
+.donate-open { width: 100%; margin-top: 2px; }
+
+/* ── Toast ──────────────────────────────────────────────── */
+#toast {
+  display: none;
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 11px 18px;
+  background: var(--slate);
+  border: 1px solid var(--hairline);
+  border-radius: 100px;
+  font-size: 12.5px; font-weight: 500;
+  box-shadow: 0 12px 32px var(--shadow);
+  z-index: 200;
+  max-width: 90vw;
+}
+#toast.ok  { border-color: var(--teal); color: var(--teal); }
+#toast.err { border-color: var(--coral); color: var(--coral); }
+
+/* ── Bottom nav (mobile) ────────────────────────────────── */
+#bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--bottomnav-h);
+  background: var(--slate);
+  border-top: 1px solid var(--hairline);
+  z-index: 60;
+  align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bn-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: var(--text-dim); font-size: 10px; font-weight: 600; position: relative;
+}
+.bn-item.active { color: var(--gold-2); }
+.bn-item.active .icon { font-variation-settings: 'FILL' 1; }
+.bn-item.locked { opacity: .4; }
+.bn-badge {
+  position: absolute; top: 4px; right: calc(50% - 20px);
+  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 100px;
+  background: var(--coral); color: #fff; font-size: 9px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+}
+.bn-badge.visible { display: flex; }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 920px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 860px) {
+  #sidebar { display: none; }
+  #bottom-nav { display: flex; }
+  #main { padding: 18px 16px calc(var(--bottomnav-h) + 26px); }
+  #layout { display: block; }
+  div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 560px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .panel-title { font-size: 20px; }
+  #header { padding: 0 12px; gap: 8px; }
+  .logo span { display: none; }
+  .save-bar { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body x-data="app()" x-init="init()" @keydown.escape.window="donateModal=false" x-cloak>
+
+<!-- Header -->
+<div id="header">
+  <div class="brand-mark"><span class="icon fill">bolt</span></div>
+  <div class="logo">hermes<span>/admin</span></div>
+  <div class="status-pill">
+    <div class="status-dot" :class="gw.state||'stopped'"></div>
+    <span x-text="gw.state||'stopped'"></span>
+  </div>
+  <div class="header-spacer"></div>
+  <button class="icon-btn" @click="restartGateway()">
+    <span class="icon sm">restart_alt</span><span class="label">Restart</span>
+  </button>
+  <button class="icon-btn" @click="donateModal=true" aria-label="Support this project">
+    <span class="icon sm">volunteer_activism</span><span class="label">Donate</span>
+  </button>
+  <button class="icon-btn square"
+          type="button"
+          @click="toggleTheme()"
+          :title="theme === 'dark' ? 'Use light mode' : 'Use dark mode'"
+          :aria-label="theme === 'dark' ? 'Use light mode' : 'Use dark mode'">
+    <span class="icon" x-text="theme === 'dark' ? 'light_mode' : 'dark_mode'"></span>
+  </button>
+</div>
+
+<!-- Layout -->
+<div id="layout">
+
+  <!-- Sidebar (desktop) -->
+  <nav id="sidebar">
+
+    <div class="nav-group-label">Setup</div>
+    <div class="nav-item" :class="{active: page==='setup'}" @click="openSetup()">
+      <span class="icon">rocket_launch</span>
+      <span>Setup</span>
+    </div>
+
+    <div class="nav-group-label" style="margin-top:8px">Monitor</div>
+    <div class="nav-item"
+         :class="{active: page==='status', locked: !isSetupDone}"
+         @click="isSetupDone && (page='status')">
+      <span class="icon">monitor_heart</span>
+      <span>Status</span>
+    </div>
+    <div class="nav-item"
+         :class="{active: page==='logs', locked: !isSetupDone}"
+         @click="isSetupDone && (page='logs')">
+      <span class="icon">terminal</span>
+      <span>Logs</span>
+    </div>
+
+    <div class="nav-group-label" style="margin-top:8px">Manage</div>
+    <div class="nav-item"
+         :class="{active: page==='users'}"
+         @click="page='users'">
+      <span class="icon">group</span>
+      <span>Users</span>
+      <span class="nav-badge" :class="{visible: pendingCount>0}" x-text="pendingCount"></span>
+    </div>
+
+    <div class="nav-divider" style="margin-top:auto;"></div>
+
+    <div class="sidebar-actions">
+      <div class="nav-item danger" @click="resetConfig()" title="Reset Config">
+        <span class="icon">delete_sweep</span>
+        <span>Reset</span>
+      </div>
+      <div class="nav-item warning" @click="logout()" title="Logout">
+        <span class="icon">logout</span>
+        <span>Logout</span>
+      </div>
+    </div>
+
+  </nav>
+
+  <!-- Main panels -->
+  <div id="main">
+
+    <!-- ── Setup panel ─────────────────────────────── -->
+    <div class="panel" :class="{active: page==='setup'}">
+      <div class="panel-header">
+        <div class="panel-title">Setup</div>
+        <div class="panel-subtitle">Configure your Hermes Agent</div>
+      </div>
+      <div class="panel-body">
+
+        <div x-show="setupMode==='summary' && isSetupDone">
+          <div class="section-label">Current Configuration</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Active Provider</div>
+              <div class="stat-value" style="font-size:14px;" x-text="activeProviderName||'—'"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Model</div>
+              <div class="stat-value" style="font-size:12px;word-break:break-all;" x-text="vars.LLM_MODEL||'—'"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Channels</div>
+              <div class="stat-value" style="font-size:14px;" x-text="enabledChannelNames.length?enabledChannelNames.join(', '):'—'"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Providers Saved</div>
+              <div class="stat-value" x-text="configuredProviderCount"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+              <div>
+                <div class="card-title" style="margin-bottom:4px;">Hermes is already configured</div>
+                <p class="hint" style="margin-top:0;">Saved credentials remain hidden until you explicitly edit the configuration.</p>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn primary" @click="beginAddProvider()"><span class="icon sm">add</span>Add Provider</button>
+                <button class="btn primary" @click="beginAddChannel()"><span class="icon sm">add</span>Add Channel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:20px;">Manage Providers</div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <template x-for="(info,name) in status.providers||{}" :key="name">
+              <div x-show="info.key_set" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--hairline);">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:500;" x-text="name"></div>
+                  <div class="hint" style="margin-top:2px;" x-text="info.configured ? info.model : 'API key only · model not registered'"></div>
+                </div>
+                <span class="chip" :class="info.active?'green':'dim'" x-text="info.active?'active':info.configured?'ready':'key only'"></span>
+                <button class="btn sm danger" :disabled="info.active"
+                        :title="info.active?'Switch provider before removing it':'Remove provider'"
+                        @click="requestManagedRemoval('provider',name)">Remove</button>
+              </div>
+            </template>
+            <div class="empty-state" x-show="managedProviderCount===0">No saved providers.</div>
+          </div>
+
+          <div class="section-label" style="margin-top:20px;">Manage Channels</div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <template x-for="(info,name) in status.channels||{}" :key="name">
+              <div x-show="info.configured" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--hairline);">
+                <div style="flex:1;font-size:13px;font-weight:500;" x-text="name"></div>
+                <span class="chip green">configured</span>
+                <button class="btn sm danger" :disabled="configuredChannelCount<=1"
+                        :title="configuredChannelCount<=1?'Add another channel before removing the last one':'Remove channel'"
+                        @click="requestManagedRemoval('channel',name)">Remove</button>
+              </div>
+            </template>
+            <div class="empty-state" x-show="configuredChannelCount===0">No configured channels.</div>
+          </div>
+        </div>
+
+        <div x-show="setupMode!=='summary' || !isSetupDone">
+        <div class="wizard-steps" x-show="setupMode==='initial'">
+          <button class="wizard-step" :class="{active:wizardStep===1,done:wizardStep>1}" @click="wizardStep=1">1 · <span>Provider</span></button>
+          <button class="wizard-step" :class="{active:wizardStep===2,done:wizardStep>2}" @click="goWizardStep(2)">2 · <span>Channels</span></button>
+          <button class="wizard-step" :class="{active:wizardStep===3}" @click="goWizardStep(3)">3 · <span>Review</span></button>
+        </div>
+
+        <div x-show="setupMode==='provider' || (setupMode==='initial' && wizardStep===1)">
+        <!-- LLM Provider -->
+        <div class="section-label">
+          LLM Provider
+          <span class="req-note">* required</span>
+        </div>
+        <div class="card">
+          <div>
+            <label class="field-label">Provider</label>
+            <select x-model="selectedProvider" @change="onProviderChange()">
+              <option value="">— Select provider —</option>
+              <template x-for="(p, name) in providerMap" :key="name">
+                <option :value="name" x-text="name"></option>
+              </template>
+            </select>
+          </div>
+
+          <div class="field-gap" x-show="selectedProvider">
+            <label class="field-label">API Key</label>
+            <input type="password"
+                   :value="selectedProvider ? (vars[providerMap[selectedProvider]?.key]||'') : ''"
+                   @input="if(selectedProvider) vars[providerMap[selectedProvider].key]=$event.target.value"
+                   :placeholder="selectedProvider ? (providerMap[selectedProvider]?.placeholder||'Paste your API key') : ''">
+          </div>
+
+          <div class="provider-guide" x-show="selectedProvider">
+            <div>
+              <div style="font-size:13px;font-weight:500;" x-text="'Get a '+selectedProvider+' API key'"></div>
+              <p class="hint" style="margin-top:3px;" x-text="providerMap[selectedProvider]?.guide"></p>
+            </div>
+            <a :href="providerMap[selectedProvider]?.keyUrl" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:4px;">
+              Open official page <span class="icon sm">open_in_new</span>
+            </a>
+          </div>
+
+          <div class="field-gap" x-show="selectedProvider">
+            <label class="field-label">LLM Model</label>
+            <div class="model-picker" @click.outside="modelDropdownOpen=false">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text"
+                       :value="vars.LLM_MODEL||''" @input="updateProviderModel($event.target.value)"
+                       @click="availableModels.length && (modelDropdownOpen=true)"
+                       @keydown.escape="modelDropdownOpen=false"
+                       :placeholder="providerMap[selectedProvider]?.modelExample||'Enter a model name'">
+                <button class="btn" style="white-space:nowrap;" @click="loadProviderModels()"
+                        :disabled="loadingModels || !selectedProvider || !vars[providerMap[selectedProvider]?.key]"
+                        x-text="loadingModels?'Loading…':'Load Models'"></button>
+              </div>
+              <div class="model-dropdown" x-show="modelDropdownOpen && availableModels.length" x-transition>
+                <input type="text" x-model="modelFilter" @keydown.escape="modelDropdownOpen=false"
+                       placeholder="Search loaded models…" aria-label="Search models">
+                <div class="hint" x-text="filteredModels.length+' of '+availableModels.length+' models'"></div>
+                <div class="model-list">
+                  <template x-for="model in filteredModels" :key="model.id">
+                    <button type="button" class="model-option"
+                            :class="{selected:vars.LLM_MODEL===model.id}" @click="selectModel(model.id)">
+                      <span>
+                        <span x-text="model.id"></span>
+                        <span x-show="model.name && model.name!==model.id"
+                              style="display:block;color:var(--text-dim);font-size:10px;margin-top:2px;"
+                              x-text="model.name"></span>
+                      </span>
+                      <span class="model-context" x-show="model.context_length"
+                            x-text="Number(model.context_length).toLocaleString()+' ctx'"></span>
+                    </button>
+                  </template>
+                  <div class="empty-state" style="padding:18px 0;" x-show="filteredModels.length===0">No matching models.</div>
+                </div>
+              </div>
+            </div>
+            <p class="hint" x-text="providerMap[selectedProvider]?.modelHint"></p>
+            <div class="test-result" x-show="modelLoadMessage"
+                 :class="availableModels.length?'ok':'err'" x-text="modelLoadMessage"></div>
+          </div>
+
+          <div class="field-gap" x-show="selectedProvider">
+            <button class="btn" @click="testProvider()" :disabled="testingProvider || !providerReady">
+              <span class="icon sm">bolt</span>
+              <span x-text="testingProvider ? 'Testing…' : 'Test Connection'"></span>
+            </button>
+            <span class="hint" style="margin-left:8px;color:var(--amber);">Required before continuing</span>
+            <div class="test-result" x-show="providerTest.message"
+                 :class="providerTestPassed?'ok':'err'"
+                 x-text="providerTest.ok && !providerTestPassed ? 'Configuration changed — test the connection again' : providerTest.message"></div>
+          </div>
+        </div>
+        </div>
+
+        <div x-show="setupMode==='channel' || (setupMode==='initial' && wizardStep===2)">
+        <!-- Messaging Channels -->
+        <div class="section-label">
+          Messaging Channels
+          <span class="req-note">— at least one required</span>
+        </div>
+        <div class="card" style="padding: 0 16px;">
+
+          <!-- Telegram -->
+          <div class="toggle-row" @click="channelsEnabled.telegram=!channelsEnabled.telegram; if(!channelsEnabled.telegram) clearChannel('telegram')">
+            <input type="checkbox" :checked="channelsEnabled.telegram" @click.stop @change="channelsEnabled.telegram=$event.target.checked; if(!channelsEnabled.telegram) clearChannel('telegram')">
+            <span class="icon">send</span>
+            <span class="toggle-label">Telegram</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.telegram">
+            <div class="field-grid-2">
+              <div><label class="field-label">Bot Token</label><input type="password" :value="vars.TELEGRAM_BOT_TOKEN||''" @input="vars.TELEGRAM_BOT_TOKEN=$event.target.value" placeholder="From @BotFather"></div>
+              <div><label class="field-label">Allowed User IDs</label><input type="text" :value="vars.TELEGRAM_ALLOWED_USERS||''" @input="vars.TELEGRAM_ALLOWED_USERS=$event.target.value" placeholder="123456,789012"><p class="hint">Use <code>*</code> to allow all users</p></div>
+            </div>
+          </div>
+
+          <!-- Discord -->
+          <div class="toggle-row" @click="channelsEnabled.discord=!channelsEnabled.discord; if(!channelsEnabled.discord) clearChannel('discord')">
+            <input type="checkbox" :checked="channelsEnabled.discord" @click.stop @change="channelsEnabled.discord=$event.target.checked; if(!channelsEnabled.discord) clearChannel('discord')">
+            <span class="icon">sports_esports</span>
+            <span class="toggle-label">Discord</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.discord">
+            <div class="field-grid-2">
+              <div><label class="field-label">Bot Token</label><input type="password" :value="vars.DISCORD_BOT_TOKEN||''" @input="vars.DISCORD_BOT_TOKEN=$event.target.value"></div>
+              <div><label class="field-label">Allowed User IDs</label><input type="text" :value="vars.DISCORD_ALLOWED_USERS||''" @input="vars.DISCORD_ALLOWED_USERS=$event.target.value" placeholder="123456,789012"><p class="hint">Use <code>*</code> to allow all users</p></div>
+            </div>
+          </div>
+
+          <!-- Slack -->
+          <div class="toggle-row" @click="channelsEnabled.slack=!channelsEnabled.slack; if(!channelsEnabled.slack) clearChannel('slack')">
+            <input type="checkbox" :checked="channelsEnabled.slack" @click.stop @change="channelsEnabled.slack=$event.target.checked; if(!channelsEnabled.slack) clearChannel('slack')">
+            <span class="icon">workspaces</span>
+            <span class="toggle-label">Slack</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.slack">
+            <div class="field-grid-2">
+              <div><label class="field-label">Bot Token (xoxb-…)</label><input type="password" :value="vars.SLACK_BOT_TOKEN||''" @input="vars.SLACK_BOT_TOKEN=$event.target.value" placeholder="xoxb-..."></div>
+              <div><label class="field-label">App Token (xapp-…)</label><input type="password" :value="vars.SLACK_APP_TOKEN||''" @input="vars.SLACK_APP_TOKEN=$event.target.value" placeholder="xapp-..."></div>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="toggle-row" @click="channelsEnabled.email=!channelsEnabled.email; if(!channelsEnabled.email) clearChannel('email')">
+            <input type="checkbox" :checked="channelsEnabled.email" @click.stop @change="channelsEnabled.email=$event.target.checked; if(!channelsEnabled.email) clearChannel('email')">
+            <span class="icon">mail</span>
+            <span class="toggle-label">Email</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.email">
+            <div class="field-grid-2">
+              <div><label class="field-label">Address</label><input type="text" :value="vars.EMAIL_ADDRESS||''" @input="vars.EMAIL_ADDRESS=$event.target.value" placeholder="hermes@gmail.com"></div>
+              <div><label class="field-label">Password</label><input type="password" :value="vars.EMAIL_PASSWORD||''" @input="vars.EMAIL_PASSWORD=$event.target.value"></div>
+              <div><label class="field-label">IMAP Host</label><input type="text" :value="vars.EMAIL_IMAP_HOST||''" @input="vars.EMAIL_IMAP_HOST=$event.target.value" placeholder="imap.gmail.com"></div>
+              <div><label class="field-label">SMTP Host</label><input type="text" :value="vars.EMAIL_SMTP_HOST||''" @input="vars.EMAIL_SMTP_HOST=$event.target.value" placeholder="smtp.gmail.com"></div>
+            </div>
+          </div>
+
+          <!-- Mattermost -->
+          <div class="toggle-row" @click="channelsEnabled.mattermost=!channelsEnabled.mattermost; if(!channelsEnabled.mattermost) clearChannel('mattermost')">
+            <input type="checkbox" :checked="channelsEnabled.mattermost" @click.stop @change="channelsEnabled.mattermost=$event.target.checked; if(!channelsEnabled.mattermost) clearChannel('mattermost')">
+            <span class="icon">dns</span>
+            <span class="toggle-label">Mattermost</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.mattermost">
+            <div class="field-grid-2">
+              <div><label class="field-label">Server URL</label><input type="text" :value="vars.MATTERMOST_URL||''" @input="vars.MATTERMOST_URL=$event.target.value" placeholder="https://mm.example.com"></div>
+              <div><label class="field-label">Bot Token</label><input type="password" :value="vars.MATTERMOST_TOKEN||''" @input="vars.MATTERMOST_TOKEN=$event.target.value"></div>
+            </div>
+          </div>
+
+          <!-- Matrix -->
+          <div class="toggle-row" @click="channelsEnabled.matrix=!channelsEnabled.matrix; if(!channelsEnabled.matrix) clearChannel('matrix')">
+            <input type="checkbox" :checked="channelsEnabled.matrix" @click.stop @change="channelsEnabled.matrix=$event.target.checked; if(!channelsEnabled.matrix) clearChannel('matrix')">
+            <span class="icon">apps</span>
+            <span class="toggle-label">Matrix</span>
+          </div>
+          <div class="toggle-body" x-show="channelsEnabled.matrix">
+            <div class="field-grid-2">
+              <div><label class="field-label">Homeserver URL</label><input type="text" :value="vars.MATRIX_HOMESERVER||''" @input="vars.MATRIX_HOMESERVER=$event.target.value" placeholder="https://matrix.example.org"></div>
+              <div><label class="field-label">Access Token</label><input type="password" :value="vars.MATRIX_ACCESS_TOKEN||''" @input="vars.MATRIX_ACCESS_TOKEN=$event.target.value"></div>
+              <div><label class="field-label">User ID</label><input type="text" :value="vars.MATRIX_USER_ID||''" @input="vars.MATRIX_USER_ID=$event.target.value" placeholder="@hermes:example.org"></div>
+            </div>
+          </div>
+
+          <!-- WhatsApp -->
+          <div class="toggle-row" style="border-bottom:none;" @click="channelsEnabled.whatsapp=!channelsEnabled.whatsapp; vars.WHATSAPP_ENABLED=channelsEnabled.whatsapp?'true':'false'">
+            <input type="checkbox" :checked="channelsEnabled.whatsapp" @click.stop @change="channelsEnabled.whatsapp=$event.target.checked; vars.WHATSAPP_ENABLED=$event.target.checked?'true':'false'">
+            <span class="icon">forum</span>
+            <span class="toggle-label">WhatsApp</span>
+            <span style="font-size:11px;color:var(--text-dim);margin-left:8px;">pairing via gateway logs on first run</span>
+          </div>
+
+        </div>
+
+        <!-- Gateway options -->
+        <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <input type="checkbox" :checked="vars.GATEWAY_ALLOW_ALL_USERS==='true'" @change="vars.GATEWAY_ALLOW_ALL_USERS=$event.target.checked?'true':'false'">
+          <div>
+            <p style="font-size:13px;font-weight:500;">Allow all users</p>
+            <p class="hint" style="margin-top:2px;">Skip per-platform allowlists — use with caution</p>
+          </div>
+        </div>
+
+        <!-- Tool API Keys -->
+        <div class="section-label">
+          Tool API Keys
+          <span class="req-note">— optional</span>
+        </div>
+        <div class="card" style="padding: 0 16px;">
+          <template x-for="(t, i) in tools" :key="t.key">
+            <div>
+              <div class="toggle-row" :style="i===tools.length-1 && !toolsEnabled[t.key] ? 'border-bottom:none' : ''"
+                   @click="toolsEnabled[t.key]=!toolsEnabled[t.key]; if(!toolsEnabled[t.key]) clearTool(t)">
+                <input type="checkbox" :checked="toolsEnabled[t.key]" @click.stop
+                       @change="toolsEnabled[t.key]=$event.target.checked; if(!toolsEnabled[t.key]) clearTool(t)">
+                <span class="toggle-label" x-text="t.label"></span>
+              </div>
+              <div class="toggle-body" x-show="toolsEnabled[t.key]"
+                   :style="i===tools.length-1 ? 'border-bottom:none' : ''">
+                <div>
+                  <label class="field-label">API Key</label>
+                  <input :type="t.secret?'password':'text'" :value="vars[t.key]||''" @input="vars[t.key]=$event.target.value">
+                </div>
+                <div x-show="t.key==='BROWSERBASE_API_KEY'" class="field-gap">
+                  <label class="field-label">Project ID</label>
+                  <input type="text" :value="vars.BROWSERBASE_PROJECT_ID||''" @input="vars.BROWSERBASE_PROJECT_ID=$event.target.value">
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div class="card-title" style="margin-bottom:3px;">Channel connection test</div>
+              <p class="hint" style="margin-top:0;">Checks every enabled channel using the credentials above.</p>
+              <p class="hint" style="color:var(--amber);">All enabled channels must pass before continuing.</p>
+            </div>
+            <button class="btn" @click="testChannels()" :disabled="testingChannels || enabledChannelNames.length===0"
+                    x-text="testingChannels?'Testing…':'Test Channels'"></button>
+          </div>
+          <template x-for="(result,name) in channelTests" :key="name">
+            <div class="test-result" :class="result.ok && result.fingerprint===channelFingerprint(name)?'ok':'err'">
+              <strong x-text="name"></strong>
+              <span x-text="' — '+(result.ok && result.fingerprint!==channelFingerprint(name) ? 'Configuration changed — test this channel again' : result.message)"></span>
+            </div>
+          </template>
+        </div>
+        </div>
+
+        <div x-show="setupMode==='initial' && wizardStep===3">
+          <div class="section-label">Configuration Review</div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-label">Provider</div><div class="stat-value" style="font-size:14px" x-text="selectedProvider||'—'"></div></div>
+            <div class="stat-card"><div class="stat-label">Model</div><div class="stat-value" style="font-size:12px;word-break:break-all" x-text="vars.LLM_MODEL||'—'"></div></div>
+            <div class="stat-card"><div class="stat-label">Channels</div><div class="stat-value" style="font-size:14px" x-text="enabledChannelNames.length ? enabledChannelNames.join(', ') : '—'"></div></div>
+          </div>
+
+          <div class="section-label">System Diagnostics</div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <div>
+                <div class="card-title" style="margin-bottom:3px;">Railway readiness</div>
+                <p class="hint" style="margin-top:0;">Checks the current form and Railway runtime without exposing secrets.</p>
+              </div>
+              <button class="btn" @click="runDiagnostics()" :disabled="diagnosing"
+                      x-text="diagnosing?'Checking…':'Run Diagnostics'"></button>
+            </div>
+            <div x-show="diagnostics.checks.length===0" class="empty-state" style="padding:22px 0 8px;">Run diagnostics to verify this deployment.</div>
+            <template x-for="check in diagnostics.checks" :key="check.name">
+              <div class="diagnostic-row">
+                <span class="icon diagnostic-icon" :class="check.level" x-text="check.ok?'check_circle':check.level==='warning'?'warning':'cancel'"></span>
+                <div><div style="font-weight:500" x-text="check.name"></div><div class="hint" style="margin-top:2px" x-text="check.detail"></div></div>
+              </div>
+            </template>
+          </div>
+        </div>
+        </div>
+
+      </div>
+      <div class="save-bar" x-show="setupMode!=='summary' || !isSetupDone">
+        <button class="btn" x-show="setupMode==='initial' && wizardStep>1" @click="wizardStep--"><span class="icon sm">arrow_back</span>Back</button>
+        <button class="btn" x-show="setupMode!=='initial'" @click="cancelSetupAction()">Cancel</button>
+        <span x-show="setupMode==='initial' && wizardStep===1" class="hint">Step 1 of 3</span>
+        <label x-show="setupMode==='initial' && wizardStep===3" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;">
+          <input type="checkbox" x-model="restartOnSave"> Restart gateway after save
+        </label>
+        <button class="btn primary" x-show="setupMode==='initial' && wizardStep<3" @click="goWizardStep(wizardStep+1)"
+                :disabled="wizardStep===1 ? (!providerReady || !providerTestPassed) : (!channelsReady || !channelsTestPassed)">Next<span class="icon sm">arrow_forward</span></button>
+        <button class="btn primary" x-show="setupMode==='initial' && wizardStep===3" @click="saveConfig()" :disabled="saving || !setupReady">
+          <span x-show="!saving">Save &amp; Start</span>
+          <span x-show="saving">Saving…</span>
+        </button>
+        <button class="btn primary" x-show="setupMode==='provider'" @click="saveConfig()"
+                :disabled="saving || !providerReady || !providerTestPassed">
+          <span x-show="!saving">Save Provider</span><span x-show="saving">Saving…</span>
+        </button>
+        <button class="btn primary" x-show="setupMode==='channel'" @click="saveConfig()"
+                :disabled="saving || !channelsReady || !channelsTestPassed">
+          <span x-show="!saving">Save Channels</span><span x-show="saving">Saving…</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Status panel ────────────────────────────── -->
+    <div class="panel" :class="{active: page==='status'}">
+      <div class="panel-header">
+        <div class="panel-title">Status</div>
+        <div class="panel-subtitle" x-text="gw.uptime!=null ? 'uptime: '+fmtUptime(gw.uptime) : ''"></div>
+      </div>
+      <div class="panel-body">
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Gateway State</div>
+            <div class="stat-value"
+                 :class="{green: gw.state==='running', red: gw.state==='error'||gw.state==='crashed', yellow: gw.state==='starting'||gw.state==='stopping'}"
+                 x-text="gw.state||'stopped'"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Uptime</div>
+            <div class="stat-value" style="font-size:16px;" x-text="gw.uptime!=null ? fmtUptime(gw.uptime) : '—'"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pending Pairs</div>
+            <div class="stat-value" :class="{yellow: pendingCount>0}" x-text="pendingCount"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Model</div>
+            <div class="stat-value" style="font-size:12px;word-break:break-all;" x-text="vars.LLM_MODEL||'—'"></div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn success" @click="startGw()"        :disabled="gw.state==='running'"><span class="icon sm">play_arrow</span>Start</button>
+          <button class="btn danger"  @click="stopGw()"         :disabled="gw.state==='stopped'"><span class="icon sm">stop</span>Stop</button>
+          <button class="btn"         @click="restartGateway()"><span class="icon sm">restart_alt</span>Restart</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div class="section-label">Providers</div>
+            <div class="card" style="padding:0;overflow:hidden;">
+              <template x-for="(info,name) in status.providers||{}" :key="name">
+                <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--hairline);">
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;" x-text="name"></div>
+                    <div class="hint" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                         x-text="info.configured ? info.model : (info.key_set ? 'API key found · add a model to register this provider' : 'Not configured')"></div>
+                  </div>
+                  <span class="chip" :class="info.configured?'green':'dim'" x-text="info.configured?'ready':info.key_set?'key only':'—'"></span>
+                  <button class="provider-switch" :class="{on:info.active}"
+                          :disabled="!info.configured || info.active || !info.model"
+                          :title="!info.configured?'Set the API key in Setup first':!info.model?'Choose a model in Setup first':info.active?'Active provider':'Activate '+name"
+                          @click="activateProvider(name)"></button>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div>
+            <div class="section-label">Channels</div>
+            <div class="card" style="padding:0;overflow:hidden;">
+              <template x-for="(info,name) in status.channels||{}" :key="name">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--hairline);">
+                  <span style="font-size:13px;" x-text="name"></span>
+                  <span class="chip" :class="info.configured?'green':'dim'" x-text="info.configured?'set':'—'"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Logs panel ──────────────────────────────── -->
+    <div class="panel" :class="{active: page==='logs'}">
+      <div class="panel-header">
+        <div class="panel-title">Logs</div>
+        <div class="panel-subtitle" x-text="logs.length + ' lines'"></div>
+      </div>
+      <div id="log-view" x-ref="logbox">
+        <template x-for="(l,i) in logs" :key="i">
+          <div class="log-line" x-text="l"></div>
+        </template>
+        <div class="empty-state" x-show="logs.length===0">No logs yet.</div>
+      </div>
+    </div>
+
+    <!-- ── Users panel ─────────────────────────────── -->
+    <div class="panel" :class="{active: page==='users'}">
+      <div class="panel-header">
+        <div class="panel-title">Users</div>
+        <div class="panel-subtitle">Pairing requests &amp; approved</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="section-label">Pending Pairing Requests</div>
+        <div class="empty-state" x-show="pending.length===0">No pending requests. Unauthorized users who message your bot will appear here.</div>
+        <template x-for="r in pending" :key="r.platform+r.request_id">
+          <div class="pair-card pending">
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:500;" x-text="r.user_name||r.user_id"></div>
+              <div class="hint" style="margin-top:3px;">
+                <span x-text="r.platform"></span>
+                <span x-show="r.user_name" x-text="' · #'+r.user_id"></span>
+                <span x-text="' · '+r.age_minutes+'m ago'"></span>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn sm success" @click="approve(r.platform,r.request_id)">Approve</button>
+              <button class="btn sm danger"  @click="deny(r.platform,r.request_id)">Deny</button>
+            </div>
+          </div>
+        </template>
+
+        <div class="section-label" style="margin-top:20px;">Approved Users</div>
+        <div class="empty-state" x-show="approved.length===0">No approved users yet.</div>
+        <div class="card" style="padding:0;overflow:hidden;" x-show="approved.length>0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>User</th>
+                <th>Approved</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="u in approved" :key="u.platform+u.user_id">
+                <tr>
+                  <td style="color:var(--gold-2);" x-text="u.platform"></td>
+                  <td>
+                    <span x-text="u.user_name||u.user_id"></span>
+                    <span style="color:var(--text-dim);font-size:12px;font-family:var(--font-mono);" x-show="u.user_name" x-text="' #'+u.user_id"></span>
+                  </td>
+                  <td style="color:var(--text-dim);font-size:12px;" x-text="fmtDate(u.approved_at)"></td>
+                  <td style="text-align:right;">
+                    <button class="btn sm danger" @click="revoke(u.platform,u.user_id)">Revoke</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- #main -->
+</div><!-- #layout -->
+
+<!-- Bottom nav (mobile) -->
+<nav id="bottom-nav">
+  <div class="bn-item" :class="{active: page==='setup'}" @click="openSetup()">
+    <span class="icon">rocket_launch</span><span>Setup</span>
+  </div>
+  <div class="bn-item" :class="{active: page==='status', locked: !isSetupDone}" @click="isSetupDone && (page='status')">
+    <span class="icon">monitor_heart</span><span>Status</span>
+  </div>
+  <div class="bn-item" :class="{active: page==='logs', locked: !isSetupDone}" @click="isSetupDone && (page='logs')">
+    <span class="icon">terminal</span><span>Logs</span>
+  </div>
+  <div class="bn-item" :class="{active: page==='users'}" @click="page='users'">
+    <span class="icon">group</span><span>Users</span>
+    <span class="bn-badge" :class="{visible: pendingCount>0}" x-text="pendingCount"></span>
+  </div>
+  <div class="bn-item" @click="resetConfig()">
+    <span class="icon">delete_sweep</span><span>Reset</span>
+  </div>
+  <div class="bn-item" @click="logout()">
+    <span class="icon">logout</span><span>Logout</span>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div id="toast" x-ref="toast"></div>
+
+<!-- Donation options -->
+<div class="modal-backdrop" x-show="donateModal" x-transition.opacity @click.self="donateModal=false">
+  <div class="modal donate-modal" role="dialog" aria-modal="true" aria-labelledby="donate-title">
+    <div class="donate-modal-header">
+      <span class="icon lg">volunteer_activism</span>
+      <div class="panel-title" id="donate-title">Support Hermes Admin</div>
+      <button class="modal-close" type="button" @click="donateModal=false" aria-label="Close donation options"><span class="icon sm">close</span></button>
+    </div>
+    <div class="donate-modal-body">
+      <p class="donate-intro">If this dashboard makes managing Hermes Agent easier, you can support its continued development through one of the options below. Thank you!</p>
+      <div class="donate-options">
+        <template x-for="option in donationOptions" :key="option.name">
+          <div class="donate-option">
+            <div class="donate-option-icon">
+              <img :src="option.logo" :alt="option.name+' logo'" loading="lazy">
+            </div>
+            <div class="donate-option-name" x-text="option.name"></div>
+            <div class="donate-option-copy" x-text="option.description"></div>
+            <img class="donate-qr" :src="option.qr" :alt="'QR code for '+option.name" loading="lazy">
+            <a class="btn primary donate-open" :href="option.url" target="_blank" rel="noopener noreferrer">
+              Open <span class="icon sm">open_in_new</span>
+            </a>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Provider restart confirmation -->
+<div class="modal-backdrop" x-show="switchModal.open" x-transition.opacity @click.self="switchModal.open=false">
+  <div class="modal">
+    <div class="panel-title">Provider switched</div>
+    <p style="margin-top:12px;line-height:1.55;">
+      <strong x-text="switchModal.provider"></strong>
+      <span x-text="' is now active with '+switchModal.model+'.'"></span>
+    </p>
+    <p class="hint" style="margin-top:10px;">New sessions use this provider immediately. Existing sessions keep their current model unless the gateway is restarted.</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <button class="btn" @click="switchModal.open=false">Later</button>
+      <button class="btn primary" @click="restartAfterSwitch()">Restart now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Logout confirmation -->
+<div class="modal-backdrop" x-show="logoutModal" x-transition.opacity @click.self="logoutModal=false">
+  <div class="modal">
+    <div class="panel-title" style="color:var(--amber);">Logout</div>
+    <p style="margin-top:12px;line-height:1.55;">Are you sure you want to logout from Hermes Admin?</p>
+    <p class="hint" style="margin-top:8px;">Your gateway will keep running. Only this dashboard session will end.</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <button class="btn" @click="logoutModal=false">Cancel</button>
+      <button class="btn" style="border-color:var(--amber);color:var(--amber);" @click="confirmLogout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- Managed integration removal -->
+<div class="modal-backdrop" x-show="removeModal.open" x-transition.opacity @click.self="removeModal.open=false">
+  <div class="modal">
+    <div class="panel-title" style="color:var(--coral);"
+         x-text="'Remove '+removeModal.name+'?'"></div>
+    <p style="margin-top:12px;line-height:1.55;"
+       x-text="removeModal.type==='provider' ? 'The API key and saved model for this provider will be deleted.' : 'All credentials and settings for this channel will be deleted.'"></p>
+    <p class="hint" style="margin-top:8px;"
+       x-text="removeModal.type==='channel' ? 'The gateway will restart automatically if it is running.' : 'This action cannot be undone.'"></p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <button class="btn" @click="removeModal.open=false">Cancel</button>
+      <button class="btn danger" @click="confirmManagedRemoval()" :disabled="removeModal.removing">
+        <span x-text="removeModal.removing?'Removing…':'Remove'"></span>
+      </button>
+    </div>
+  </div>
+</div>
+<script>
+function app() {
+  const tools = [
+    { key: 'PARALLEL_API_KEY',       label: 'Parallel (search)',         secret: true  },
+    { key: 'FIRECRAWL_API_KEY',      label: 'Firecrawl (scraping)',       secret: true  },
+    { key: 'TAVILY_API_KEY',         label: 'Tavily (search)',            secret: true  },
+    { key: 'FAL_KEY',                label: 'FAL (image gen)',            secret: true  },
+    { key: 'BROWSERBASE_API_KEY',    label: 'Browserbase',                secret: true  },
+    { key: 'GITHUB_TOKEN',           label: 'GitHub',                     secret: true  },
+    { key: 'VOICE_TOOLS_OPENAI_KEY', label: 'OpenAI Voice (Whisper/TTS)', secret: true  },
+    { key: 'HONCHO_API_KEY',         label: 'Honcho (memory)',            secret: true  },
+  ];
+
+  return {
+    page: 'setup',
+    theme: document.documentElement.dataset.theme || 'dark',
+    donateModal: false,
+    donationOptions: [
+      {
+        name: 'Ko-fi',
+        logo: 'https://cdn.simpleicons.org/kofi',
+        description: 'International support via Ko-fi',
+        url: 'https://ko-fi.com/asepsaputra',
+        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fko-fi.com%2Fasepsaputra',
+      },
+      {
+        name: 'Buy Me a Coffee',
+        logo: 'https://cdn.simpleicons.org/buymeacoffee',
+        description: 'International support via Buy Me a Coffee',
+        url: 'https://buymeacoffee.com/asepsaputra',
+        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fbuymeacoffee.com%2Fasepsaputra',
+      },
+      {
+        name: 'Saweria',
+        logo: 'https://saweria.co/favicon.ico',
+        description: 'Local support through Saweria',
+        url: 'https://saweria.co/asepsp',
+        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fsaweria.co%2Fasepsp',
+      },
+      {
+        name: 'PayPal',
+        logo: 'https://cdn.simpleicons.org/paypal',
+        description: 'Direct transfer through PayPal.Me',
+        url: 'https://paypal.me/selaris',
+        qr: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fpaypal.me%2Fselaris',
+      },
+    ],
+    vars: {},
+    gw: {},
+    status: {},
+    logs: [],
+    pending: [],
+    approved: [],
+    saving: false,
+    restartOnSave: true,
+    setupMode: 'summary',
+    wizardStep: 1,
+    testingProvider: false,
+    loadingModels: false,
+    testingChannels: false,
+    diagnosing: false,
+    providerTest: { ok: false, message: '' },
+    availableModels: [],
+    modelLoadMessage: '',
+    modelDropdownOpen: false,
+    modelFilter: '',
+    activeModelBeforeAction: '',
+    channelTests: {},
+    diagnostics: { checks: [], summary: {} },
+    toggleTheme() {
+      this.theme = this.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = this.theme;
+      try { localStorage.setItem('hermes-theme', this.theme); } catch (_) {}
+    },
+    editingProvider: '',
+    switchModal: { open:false, provider:'', model:'' },
+    logoutModal: false,
+    removeModal: {open:false,type:'',name:'',removing:false},
+
+    tools,
+
+    providerMap: {
+      'OpenRouter': {
+        key:'OPENROUTER_API_KEY', slug:'openrouter', placeholder:'sk-or-...', modelExample:'e.g. google/gemini-2.5-flash',
+        modelHint:'Use provider/model-name format.', guide:'Login, open Keys, then create a new key.',
+        keyUrl:'https://openrouter.ai/settings/keys',
+      },
+      'OpenAI': {
+        key:'OPENAI_API_KEY', slug:'openai', placeholder:'sk-...', modelExample:'e.g. gpt-4.1-mini',
+        modelHint:'Use the model ID shown in the OpenAI model documentation.', guide:'Open API Keys and create a project secret key. API billing is separate from ChatGPT.',
+        keyUrl:'https://platform.openai.com/api-keys',
+      },
+      'Claude / Anthropic': {
+        key:'ANTHROPIC_API_KEY', slug:'anthropic', placeholder:'sk-ant-...', modelExample:'e.g. claude-sonnet-4-20250514',
+        modelHint:'Use an Anthropic API model ID, not an OpenRouter-prefixed name.', guide:'Open Anthropic Console, choose API Keys, then create a key.',
+        keyUrl:'https://console.anthropic.com/settings/keys',
+      },
+      'Google Gemini': {
+        key:'GEMINI_API_KEY', slug:'gemini', placeholder:'AIza...', modelExample:'e.g. gemini-2.5-flash',
+        modelHint:'Use a Google AI Studio model ID such as gemini-2.5-flash.', guide:'Open Google AI Studio, login, then click Create API key.',
+        keyUrl:'https://aistudio.google.com/app/apikey',
+      },
+      'xAI / Grok': {
+        key:'XAI_API_KEY', slug:'xai', placeholder:'xai-...', modelExample:'e.g. grok-4',
+        modelHint:'Use a model ID available to your xAI account.', guide:'Open the xAI Console and create an API key for your team.',
+        keyUrl:'https://console.x.ai/',
+      },
+      'NVIDIA NIM': {
+        key:'NVIDIA_API_KEY', slug:'nvidia', placeholder:'nvapi-...', modelExample:'e.g. meta/llama-3.1-8b-instruct',
+        modelHint:'Copy the model ID from NVIDIA API Catalog.', guide:'Choose a model in NVIDIA API Catalog, select Get API Key, and generate a key.',
+        keyUrl:'https://build.nvidia.com/',
+      },
+      'DeepSeek': {
+        key:'DEEPSEEK_API_KEY', slug:'deepseek', placeholder:'sk-...', modelExample:'e.g. deepseek-chat',
+        modelHint:'Use deepseek-chat or another model enabled for your account.', guide:'Open the DeepSeek platform API Keys page and create a new key.',
+        keyUrl:'https://platform.deepseek.com/api_keys',
+      },
+      'DashScope': {
+        key:'DASHSCOPE_API_KEY', slug:'alibaba', placeholder:'sk-...', modelExample:'e.g. qwen-plus',
+        modelHint:'The test uses the international DashScope endpoint.', guide:'Open Alibaba Model Studio, enable a model, then create an API key.',
+        keyUrl:'https://modelstudio.console.alibabacloud.com/',
+      },
+      'GLM / Z.AI': {
+        key:'GLM_API_KEY', slug:'zai', placeholder:'Paste your GLM key', modelExample:'e.g. glm-4.5',
+        modelHint:'Use a model ID enabled in the Z.AI developer platform.', guide:'Open the Z.AI API key management page and create a key.',
+        keyUrl:'https://z.ai/manage-apikey/apikey-list',
+      },
+      'Kimi': {
+        key:'KIMI_API_KEY', slug:'kimi-coding', placeholder:'sk-...', modelExample:'e.g. moonshot-v1-8k',
+        modelHint:'Use a Moonshot model ID available to your account.', guide:'Open Moonshot Platform, then create a key under API Keys.',
+        keyUrl:'https://platform.moonshot.ai/console/api-keys',
+      },
+      'MiniMax': {
+        key:'MINIMAX_API_KEY', slug:'minimax', placeholder:'Paste your MiniMax key', modelExample:'e.g. MiniMax-M2.1',
+        modelHint:'Use a model ID supported by the global MiniMax API.', guide:'Open MiniMax Platform, enter API key management, and create a key.',
+        keyUrl:'https://platform.minimax.io/user-center/basic-information/interface-key',
+      },
+      'HuggingFace': {
+        key:'HF_TOKEN', slug:'huggingface', placeholder:'hf_...', modelExample:'e.g. meta-llama/Llama-3.1-8B-Instruct',
+        modelHint:'Use the repository ID of an inference-supported model.', guide:'Open Access Tokens, create a fine-grained token, and grant inference access.',
+        keyUrl:'https://huggingface.co/settings/tokens',
+      },
+    },
+
+    selectedProvider: '',
+
+    channelsEnabled: {
+      telegram: false, discord: false, slack: false,
+      email: false, mattermost: false, matrix: false, whatsapp: false,
+    },
+
+    toolsEnabled: Object.fromEntries(tools.map(t => [t.key, false])),
+
+    get pendingCount() { return this.pending.length; },
+
+    get activeProviderName() {
+      const entries = Object.entries(this.providerMap);
+      const active = entries.find(([name,p]) =>
+        p.slug===this.vars.LLM_PROVIDER &&
+        this.vars[p.key] &&
+        this.vars[this.providerModelKey(name)]
+      );
+      const firstRegistered = entries.find(([name,p]) =>
+        this.vars[p.key] && this.vars[this.providerModelKey(name)]
+      );
+      return active?.[0] || firstRegistered?.[0] || this.selectedProvider;
+    },
+
+    get configuredProviderCount() {
+      return Object.entries(this.providerMap).filter(([name, provider]) => {
+        const model = this.vars[this.providerModelKey(name)];
+        return !!(this.vars[provider.key] && model);
+      }).length;
+    },
+
+    get managedProviderCount() {
+      return Object.values(this.status.providers||{}).filter(info => info.key_set).length;
+    },
+
+    get configuredChannelCount() {
+      return Object.values(this.status.channels||{}).filter(info => info.configured).length;
+    },
+
+    get filteredModels() {
+      const query = this.modelFilter.trim().toLowerCase();
+      if (!query) return this.availableModels;
+      return this.availableModels.filter(model =>
+        model.id.toLowerCase().includes(query) ||
+        (model.name||'').toLowerCase().includes(query)
+      );
+    },
+
+    get providerReady() {
+      const p = this.providerMap[this.selectedProvider];
+      return !!(p && this.vars[p.key] && (this.vars.LLM_MODEL||'').trim());
+    },
+
+    get providerTestPassed() {
+      return !!(
+        this.providerTest.ok &&
+        this.providerTest.fingerprint === this.providerFingerprint()
+      );
+    },
+
+    get enabledChannelNames() {
+      return Object.entries(this.channelsEnabled).filter(([,on]) => on).map(([name]) => name);
+    },
+
+    get channelsReady() {
+      const v = this.vars;
+      return this.enabledChannelNames.length > 0 && this.enabledChannelNames.every(ch => ({
+        telegram: !!v.TELEGRAM_BOT_TOKEN,
+        discord: !!v.DISCORD_BOT_TOKEN,
+        slack: !!(v.SLACK_BOT_TOKEN && v.SLACK_APP_TOKEN),
+        email: !!(v.EMAIL_ADDRESS && v.EMAIL_PASSWORD && v.EMAIL_IMAP_HOST && v.EMAIL_SMTP_HOST),
+        mattermost: !!(v.MATTERMOST_URL && v.MATTERMOST_TOKEN),
+        matrix: !!(v.MATRIX_HOMESERVER && v.MATRIX_ACCESS_TOKEN && v.MATRIX_USER_ID),
+        whatsapp: v.WHATSAPP_ENABLED === 'true',
+      })[ch]);
+    },
+
+    get channelsTestPassed() {
+      return (
+        this.enabledChannelNames.length > 0 &&
+        this.enabledChannelNames.every(channel => {
+          const result = this.channelTests[channel];
+          return result?.ok && result.fingerprint === this.channelFingerprint(channel);
+        })
+      );
+    },
+
+    get setupReady() {
+      return this.providerReady && this.providerTestPassed &&
+             this.channelsReady && this.channelsTestPassed;
+    },
+
+    get isSetupDone() {
+      const keys = Object.values(this.providerMap).map(p => p.key);
+      const providerReady = !!(this.vars.LLM_MODEL && keys.some(k => this.vars[k]));
+      const channelReady = !!(
+        this.vars.TELEGRAM_BOT_TOKEN || this.vars.DISCORD_BOT_TOKEN ||
+        this.vars.SLACK_BOT_TOKEN || this.vars.EMAIL_ADDRESS ||
+        this.vars.MATTERMOST_TOKEN || this.vars.MATRIX_ACCESS_TOKEN ||
+        this.vars.WHATSAPP_ENABLED === 'true'
+      );
+      return this.vars.SETUP_COMPLETED === 'true' || (providerReady && channelReady);
+    },
+
+    providerModelKey(providerName) {
+      const key = this.providerMap[providerName]?.key||'';
+      return 'LLM_MODEL_'+key.replace(/_(API_KEY|TOKEN)$/,'');
+    },
+
+    fingerprint(values) {
+      const text = JSON.stringify(values);
+      let hash = 2166136261;
+      for (let i=0; i<text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash>>>0).toString(16);
+    },
+
+    providerFingerprint() {
+      const provider = this.providerMap[this.selectedProvider];
+      return this.fingerprint([
+        this.selectedProvider,
+        provider ? this.vars[provider.key]||'' : '',
+        this.vars.LLM_MODEL||'',
+      ]);
+    },
+
+    channelKeys(channel) {
+      return {
+        telegram:   ['TELEGRAM_BOT_TOKEN','TELEGRAM_ALLOWED_USERS'],
+        discord:    ['DISCORD_BOT_TOKEN','DISCORD_ALLOWED_USERS'],
+        slack:      ['SLACK_BOT_TOKEN','SLACK_APP_TOKEN'],
+        email:      ['EMAIL_ADDRESS','EMAIL_PASSWORD','EMAIL_IMAP_HOST','EMAIL_SMTP_HOST'],
+        mattermost: ['MATTERMOST_URL','MATTERMOST_TOKEN'],
+        matrix:     ['MATRIX_HOMESERVER','MATRIX_ACCESS_TOKEN','MATRIX_USER_ID'],
+        whatsapp:   ['WHATSAPP_ENABLED'],
+      }[channel]||[];
+    },
+
+    channelFingerprint(channel) {
+      return this.fingerprint([
+        channel,
+        ...this.channelKeys(channel).map(key => this.vars[key]||''),
+      ]);
+    },
+
+    updateProviderModel(value) {
+      this.vars.LLM_MODEL = value;
+      if (this.selectedProvider) this.vars[this.providerModelKey(this.selectedProvider)] = value;
+    },
+
+    selectModel(modelId) {
+      this.updateProviderModel(modelId);
+      this.modelDropdownOpen = false;
+      this.modelFilter = '';
+    },
+
+    onProviderChange() {
+      if (this.editingProvider) {
+        this.vars[this.providerModelKey(this.editingProvider)] = this.vars.LLM_MODEL||'';
+      }
+      this.providerTest = { ok:false, message:'' };
+      this.availableModels = [];
+      this.modelLoadMessage = '';
+      this.modelDropdownOpen = false;
+      this.modelFilter = '';
+      this.vars.LLM_MODEL = this.vars[this.providerModelKey(this.selectedProvider)]||'';
+      this.editingProvider = this.selectedProvider;
+    },
+
+    clearChannel(ch) {
+      delete this.channelTests[ch];
+      for (const k of this.channelKeys(ch)) this.vars[k] = '';
+    },
+
+    clearTool(t) {
+      this.vars[t.key] = '';
+      if (t.key === 'BROWSERBASE_API_KEY') this.vars.BROWSERBASE_PROJECT_ID = '';
+    },
+
+    async openSetup() {
+      this.page = 'setup';
+      await Promise.all([this.loadConfig(),this.loadStatus()]);
+      this.setupMode = this.isSetupDone ? 'summary' : 'initial';
+      this.wizardStep = 1;
+      this.providerTest = {ok:false,message:''};
+      this.channelTests = {};
+    },
+
+    beginAddProvider() {
+      this.activeModelBeforeAction = this.vars.LLM_MODEL||'';
+      this.setupMode = 'provider';
+      this.selectedProvider = '';
+      this.editingProvider = '';
+      this.vars.LLM_MODEL = '';
+      this.wizardStep = 1;
+      this.providerTest = {ok:false,message:''};
+      this.availableModels = [];
+      this.modelLoadMessage = '';
+    },
+
+    beginAddChannel() {
+      this.setupMode = 'channel';
+      this.channelsEnabled = {
+        telegram:false, discord:false, slack:false, email:false,
+        mattermost:false, matrix:false, whatsapp:false,
+      };
+      this.channelTests = {};
+      this.wizardStep = 2;
+    },
+
+    async cancelSetupAction() {
+      await this.loadConfig();
+      this.setupMode = 'summary';
+      this.providerTest = {ok:false,message:''};
+      this.channelTests = {};
+    },
+
+    requestManagedRemoval(type, name) {
+      this.removeModal = {open:true,type,name,removing:false};
+    },
+
+    async confirmManagedRemoval() {
+      const {type,name} = this.removeModal;
+      this.removeModal.removing = true;
+      const endpoint = type==='provider' ? '/api/provider/remove' : '/api/channel/remove';
+      const body = type==='provider' ? {provider:name} : {channel:name};
+      try {
+        const response = await fetch(endpoint, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(body),
+        });
+        const data = await response.json().catch(()=>({}));
+        if (!response.ok) {
+          this.removeModal.removing = false;
+          this.notify(data.error||'Could not remove configuration',false);
+          return;
+        }
+        this.removeModal = {open:false,type:'',name:'',removing:false};
+        await Promise.all([this.loadConfig(),this.loadStatus()]);
+        this.notify(
+          type==='channel' && data.restarting ? `${name} removed — gateway restarting` : `${name} removed`,
+          true,
+        );
+      } catch(e) {
+        this.removeModal.removing = false;
+        this.notify('Could not remove configuration: '+e.message,false);
+      }
+    },
+
+    goWizardStep(step) {
+      if (step > 1 && !this.providerReady) {
+        this.notify('Select a provider, API key, and model first', false);
+        this.wizardStep = 1;
+        return;
+      }
+      if (step > 1 && !this.providerTestPassed) {
+        this.notify('Test the provider connection successfully before continuing', false);
+        this.wizardStep = 1;
+        return;
+      }
+      if (step > 2 && !this.channelsReady) {
+        this.notify('Enable and complete at least one channel', false);
+        this.wizardStep = 2;
+        return;
+      }
+      if (step > 2 && !this.channelsTestPassed) {
+        this.notify('All enabled channels must pass the connection test', false);
+        this.wizardStep = 2;
+        return;
+      }
+      this.wizardStep = Math.max(1, Math.min(3, step));
+      if (this.wizardStep === 3) this.runDiagnostics();
+    },
+
+    async testProvider() {
+      if (!this.providerReady) return;
+      this.testingProvider = true;
+      this.providerTest = {ok:false,message:''};
+      const p = this.providerMap[this.selectedProvider];
+      try {
+        const r = await fetch('/api/setup/test-provider', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({provider:this.selectedProvider, model:this.vars.LLM_MODEL, api_key:this.vars[p.key]}),
+        });
+        const d = await r.json().catch(()=>({}));
+        this.providerTest = {
+          ok:r.ok && d.ok,
+          message:(r.ok && d.ok ? `Connected in ${d.latency_ms} ms` : (d.error||'Connection failed')),
+          fingerprint:this.providerFingerprint(),
+        };
+        if (this.providerTest.ok) await this.loadProviderModels();
+      } catch(e) {
+        this.providerTest = {ok:false,message:'Connection failed: '+e.message};
+      }
+      this.testingProvider = false;
+    },
+
+    async loadProviderModels() {
+      const p = this.providerMap[this.selectedProvider];
+      if (!p || !this.vars[p.key]) return;
+      this.loadingModels = true;
+      this.availableModels = [];
+      this.modelLoadMessage = '';
+      try {
+        const r = await fetch('/api/setup/models', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({provider:this.selectedProvider,api_key:this.vars[p.key]}),
+        });
+        const d = await r.json().catch(()=>({}));
+        if (r.ok && d.ok) {
+          this.availableModels = d.models||[];
+          this.modelLoadMessage = this.availableModels.length
+            ? `${this.availableModels.length} models loaded from ${this.selectedProvider}`
+            : 'Provider returned no compatible chat models';
+          this.modelFilter = '';
+          this.modelDropdownOpen = false;
+        } else {
+          this.modelLoadMessage = d.error||'Could not load models';
+        }
+      } catch(e) {
+        this.modelLoadMessage = 'Could not load models: '+e.message;
+      }
+      this.loadingModels = false;
+    },
+
+    async testChannels() {
+      if (!this.channelsReady) {
+        this.notify('Complete all required fields for enabled channels', false);
+        return;
+      }
+      this.testingChannels = true;
+      this.channelTests = {};
+      for (const channel of this.enabledChannelNames) {
+        this.channelTests[channel] = {ok:false,message:'Testing…'};
+        try {
+          const r = await fetch('/api/setup/test-channel', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({channel,vars:{...this.vars}}),
+          });
+          const d = await r.json().catch(()=>({}));
+          this.channelTests[channel] = {
+            ok:r.ok && d.ok,
+            message:(r.ok && d.ok ? `${d.message} (${d.latency_ms} ms)` : (d.error||'Connection failed')),
+            fingerprint:this.channelFingerprint(channel),
+          };
+        } catch(e) {
+          this.channelTests[channel] = {ok:false,message:'Connection failed: '+e.message};
+        }
+      }
+      this.testingChannels = false;
+    },
+
+    async runDiagnostics() {
+      this.diagnosing = true;
+      try {
+        const r = await fetch('/api/diagnostics', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({vars:{...this.vars}}),
+        });
+        const d = await r.json().catch(()=>({checks:[]}));
+        this.diagnostics = d;
+      } catch(e) {
+        this.diagnostics = {checks:[{name:'Dashboard API',ok:false,level:'error',detail:e.message}],summary:{}};
+      }
+      this.diagnosing = false;
+    },
+
+    async init() {
+      if (!window.__hermesAuthFetchInstalled) {
+        const originalFetch = window.fetch.bind(window);
+        window.fetch = async (...args) => {
+          const response = await originalFetch(...args);
+          if (response.status === 401) {
+            window.location.replace('/login?expired=1');
+            throw new Error('Session expired');
+          }
+          return response;
+        };
+        window.__hermesAuthFetchInstalled = true;
+      }
+      await Promise.all([this.loadConfig(), this.loadStatus(), this.loadLogs(), this.loadPairing()]);
+      this.setupMode = this.isSetupDone ? 'summary' : 'initial';
+      this.wizardStep = 1;
+      setInterval(() => this.loadStatus(),  5000);
+      setInterval(() => this.loadLogs(),    3000);
+      setInterval(() => this.loadPairing(), 5000);
+    },
+
+    async loadConfig() {
+      try {
+        const r = await fetch('/api/config');
+        if (r.ok) {
+          const d = await r.json();
+          this.vars = d.vars || {};
+          // Detect active provider
+          const entries = Object.entries(this.providerMap);
+          const active = entries.find(([,p]) => p.slug===this.vars.LLM_PROVIDER);
+          const configured = entries.find(([,p]) => this.vars[p.key]);
+          this.selectedProvider = (active||configured||['',{}])[0];
+          this.editingProvider = this.selectedProvider;
+          if (this.selectedProvider) {
+            const modelKey = this.providerModelKey(this.selectedProvider);
+            this.vars.LLM_MODEL = this.vars[modelKey]||this.vars.LLM_MODEL||'';
+          }
+          // Detect active channels
+          this.channelsEnabled = {
+            telegram:   !!(this.vars.TELEGRAM_BOT_TOKEN),
+            discord:    !!(this.vars.DISCORD_BOT_TOKEN),
+            slack:      !!(this.vars.SLACK_BOT_TOKEN),
+            email:      !!(this.vars.EMAIL_ADDRESS),
+            mattermost: !!(this.vars.MATTERMOST_URL),
+            matrix:     !!(this.vars.MATRIX_HOMESERVER),
+            whatsapp:   this.vars.WHATSAPP_ENABLED === 'true',
+          };
+          // Detect active tools
+          for (const t of this.tools) {
+            this.toolsEnabled[t.key] = !!(this.vars[t.key]);
+          }
+        }
+      } catch {}
+    },
+
+    async saveConfig() {
+      this.saving = true;
+      try {
+        const mode = this.setupMode;
+        const providerWasTested = this.providerTestPassed;
+        const testedChannels = Object.fromEntries(
+          this.enabledChannelNames.map(channel => [channel, {
+            passed:!!(
+              this.channelTests[channel]?.ok &&
+              this.channelTests[channel]?.fingerprint === this.channelFingerprint(channel)
+            ),
+          }])
+        );
+        const payloadVars = {...this.vars};
+        let shouldRestart = mode === 'channel' || (mode === 'initial' && this.restartOnSave);
+        if ((mode === 'initial' || mode === 'provider') && this.selectedProvider) {
+          const provider = this.providerMap[this.selectedProvider];
+          payloadVars[this.providerModelKey(this.selectedProvider)] = this.vars.LLM_MODEL||'';
+          const activeEntry = Object.entries(this.providerMap).find(([,item]) => item.slug===payloadVars.LLM_PROVIDER);
+          const activeIsRegistered = !!(
+            activeEntry &&
+            payloadVars[activeEntry[1].key] &&
+            payloadVars[this.providerModelKey(activeEntry[0])]
+          );
+          if (mode === 'initial' || !activeIsRegistered) {
+            payloadVars.LLM_PROVIDER = provider.slug;
+            payloadVars.LLM_MODEL = this.vars.LLM_MODEL||'';
+          } else if (provider.slug === payloadVars.LLM_PROVIDER) {
+            payloadVars.LLM_MODEL = this.vars.LLM_MODEL||'';
+            shouldRestart = this.gw.state === 'running';
+          } else {
+            payloadVars.LLM_MODEL = this.activeModelBeforeAction;
+          }
+        }
+        if (mode === 'initial') {
+          payloadVars.SETUP_COMPLETED = 'true';
+        }
+        const r = await fetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vars: payloadVars, _restart: shouldRestart }),
+        });
+        if (r.ok) {
+          const savedLabel = mode === 'provider' ? 'Provider saved' :
+                             mode === 'channel' ? 'Channels saved' : 'Setup saved';
+          this.notify(shouldRestart ? savedLabel+' — gateway is restarting' : savedLabel, true);
+          await this.loadConfig();
+          if (providerWasTested && this.providerTest.ok) {
+            this.providerTest.fingerprint = this.providerFingerprint();
+          }
+          for (const channel of this.enabledChannelNames) {
+            if (testedChannels[channel]?.passed && this.channelTests[channel]?.ok) {
+              this.channelTests[channel].fingerprint = this.channelFingerprint(channel);
+            }
+          }
+          this.setupMode = 'summary';
+          this.page = 'status';
+          setTimeout(() => { this.loadStatus(); this.runDiagnostics(); }, shouldRestart ? 1500 : 0);
+        }
+        else { const e = await r.json().catch(()=>{}); this.notify(e?.error||'Save failed', false); }
+      } catch(e) { this.notify('Save failed: '+e.message, false); }
+      this.saving = false;
+    },
+
+    async resetConfig() {
+      if (!confirm('Reset all configuration? This will stop the gateway and clear all saved settings.')) return;
+      const r = await fetch('/api/config/reset', { method: 'POST' });
+      if (r.ok) {
+        await this.loadConfig();
+        this.selectedProvider = '';
+        this.setupMode = 'initial';
+        this.wizardStep = 1;
+        this.providerTest = {ok:false,message:''};
+        this.channelTests = {};
+        this.diagnostics = {checks:[],summary:{}};
+        this.page = 'setup';
+        this.notify('Config reset', true);
+      } else {
+        this.notify('Reset failed', false);
+      }
+    },
+
+    async loadStatus() {
+      try {
+        const r = await fetch('/api/status');
+        if (r.ok) { const d = await r.json(); this.status = d; this.gw = d.gateway||{}; }
+      } catch {}
+    },
+
+    async loadLogs() {
+      try {
+        const r = await fetch('/api/logs');
+        if (r.ok) {
+          const d = await r.json();
+          const box = this.$refs.logbox;
+          const atBottom = box && (box.scrollTop + box.clientHeight >= box.scrollHeight - 40);
+          this.logs = d.lines||[];
+          if (atBottom && box) this.$nextTick(() => { box.scrollTop = box.scrollHeight; });
+        }
+      } catch {}
+    },
+
+    async loadPairing() {
+      try {
+        const [pr, ar] = await Promise.all([fetch('/api/pairing/pending'), fetch('/api/pairing/approved')]);
+        if (pr.ok) this.pending  = (await pr.json()).pending||[];
+        if (ar.ok) this.approved = (await ar.json()).approved||[];
+      } catch {}
+    },
+
+    async startGw()        { await fetch('/api/gateway/start',   {method:'POST'}); this.notify('Starting…',   true); setTimeout(()=>this.loadStatus(),1000); },
+    async stopGw()         { await fetch('/api/gateway/stop',    {method:'POST'}); this.notify('Stopping…',   true); setTimeout(()=>this.loadStatus(),1000); },
+    async restartGateway() { await fetch('/api/gateway/restart', {method:'POST'}); this.notify('Restarting…', true); setTimeout(()=>this.loadStatus(),2000); },
+
+    async activateProvider(name) {
+      try {
+        const r = await fetch('/api/provider/activate', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({provider:name}),
+        });
+        const d = await r.json().catch(()=>({}));
+        if (!r.ok) {
+          this.notify(d.error||'Could not switch provider', false);
+          return;
+        }
+        await Promise.all([this.loadStatus(),this.loadConfig()]);
+        if (d.restart_recommended) {
+          this.switchModal = {open:true,provider:d.provider,model:d.model};
+        } else {
+          this.notify(`${d.provider} is now active`, true);
+        }
+      } catch(e) {
+        this.notify('Could not switch provider: '+e.message, false);
+      }
+    },
+
+    async restartAfterSwitch() {
+      this.switchModal.open = false;
+      await this.restartGateway();
+    },
+
+    async logout() {
+      this.logoutModal = true;
+    },
+
+    confirmLogout() {
+      this.logoutModal = false;
+      window.location.assign('/logout');
+    },
+
+    async approve(platform, request_id) {
+      const r = await fetch('/api/pairing/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,request_id}) });
+      if (r.ok) { this.notify('User approved', true); await this.loadPairing(); }
+      else { const e = await r.json().catch(()=>{}); this.notify(e?.error||'Failed', false); }
+    },
+    async deny(platform, request_id) {
+      await fetch('/api/pairing/deny', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,request_id}) });
+      this.notify('Denied', true); await this.loadPairing();
+    },
+    async revoke(platform, user_id) {
+      if (!confirm('Revoke access for this user?')) return;
+      await fetch('/api/pairing/revoke', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform,user_id}) });
+      this.notify('Revoked', true); await this.loadPairing();
+    },
+
+    fmtDate(ts) {
+      if (!ts) return '—';
+      return new Date(ts*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    },
+    fmtUptime(s) {
+      if (s==null) return '';
+      const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+      return h>0?`${h}h ${m}m ${sec}s`:m>0?`${m}m ${sec}s`:`${sec}s`;
+    },
+    notify(msg, ok) {
+      const el = this.$refs.toast;
+      if (!el) return;
+      el.textContent = msg;
+      el.className = ok ? 'ok' : 'err';
+      el.style.display = 'block';
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+    },
+  };
+}
+</script>
+</body>
+</html>
