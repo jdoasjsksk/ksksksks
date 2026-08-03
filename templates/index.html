@@ -418,6 +418,50 @@
   }
   select option { background: var(--surface-2); }
 
+  /* ── Model combobox ─────────────────────────── */
+  .combo { position: relative; }
+  .combo .combo-input {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0 11px;
+    cursor: text;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .combo .combo-input:focus-within { border-color: var(--signal); box-shadow: 0 0 0 3px var(--signal-wash); }
+  .combo .combo-input .icon { font-size: 17px; color: var(--text-faint); flex-shrink: 0; }
+  .combo .combo-input input {
+    flex: 1;
+    border: none; outline: none; background: transparent;
+    color: var(--text); font-family: var(--font-mono); font-size: 13px;
+    padding: 9px 0; min-width: 0;
+  }
+  .combo .combo-input input::placeholder { color: var(--text-faint); }
+  .combo .combo-caret { font-size: 18px; color: var(--text-faint); flex-shrink: 0; cursor: pointer; transition: transform 0.15s; }
+  .combo .combo-caret.open { transform: rotate(180deg); }
+  .combo .combo-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--surface-3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    max-height: 280px; overflow-y: auto; z-index: 60;
+  }
+  .combo .combo-opt {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 12px; font-family: var(--font-mono); font-size: 12.5px;
+    color: var(--text-dim); cursor: pointer; border-bottom: 1px solid var(--border-soft);
+  }
+  .combo .combo-opt:last-child { border-bottom: none; }
+  .combo .combo-opt:hover { background: var(--surface-2); color: var(--text); }
+  .combo .combo-opt.selected { color: var(--signal-hi); background: var(--signal-wash); }
+  .combo .combo-opt .icon { font-size: 15px; color: var(--signal); }
+  .combo .combo-empty { padding: 12px; font-size: 12px; color: var(--text-faint); text-align: center; }
+  .combo .combo-src { padding: 8px 12px; font-size: 10.5px; font-family: var(--font-mono); color: var(--text-faint); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+  .combo .combo-src .chip { font-size: 9.5px; padding: 1px 7px; }
+
   /* ── Cards ────────────────────────────────────────── */
   .card {
     background: var(--surface);
@@ -805,6 +849,10 @@
     <div class="nav-item" :class="{active: page==='setup'}" @click="page='setup'">
       <span class="icon nav-icon">tune</span>
       <span>Setup</span>
+    </div>
+    <div class="nav-item" :class="{active: page==='models'}" @click="page='models'">
+      <span class="icon nav-icon">model_training</span>
+      <span>Models</span>
     </div>
 
     <div class="nav-group-label">Dashboard</div>
@@ -1218,6 +1266,175 @@
             <span x-show="saving">Saving…</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- ── Models panel ─────────────────────────── -->
+    <div class="panel" :class="{active: page==='models'}">
+      <div class="panel-header">
+        <div class="panel-title">Models</div>
+        <div class="panel-subtitle">Main model &amp; auxiliary tasks</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="callout">
+          <span class="icon">info</span>
+          <span>Auxiliary tasks run on a separate model — pick a cheap/fast one (e.g. flash or haiku) to keep main-model context clean. Leave provider at <code style="color:var(--signal-hi);">auto</code> to use whichever provider is configured. Model lists are fetched live from each provider when a key is set; curated suggestions are offered offline.</span>
+        </div>
+
+        <!-- Main model -->
+        <div class="section-label">
+          <span class="icon" style="font-size:14px;">smart_toy</span>
+          Main Model
+        </div>
+        <div class="card">
+          <div class="field-grid-2">
+            <div>
+              <label class="field-label">Provider</label>
+              <select x-model="mainState.providerKey" @change="mainState.model=''; mainState.models=[]; mainState.source=''">
+                <option value="">— Select provider —</option>
+                <template x-for="cp in configuredProviders.filter(c=>c.key)" :key="cp.providerKey">
+                  <option :value="cp.key" x-text="cp.name"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Model</label>
+              <div class="combo" @click.outside="mainState.open=false">
+                <div class="combo-input">
+                  <span class="icon">search</span>
+                  <input type="text"
+                         :value="mainState.model"
+                         @focus="mainState.open=true; loadMainModels()"
+                         @input="mainState.model=$event.target.value; mainState.open=true"
+                         placeholder="Type or pick a model">
+                  <span class="icon combo-caret" :class="{open: mainState.open}" @click="mainState.open=!mainState.open; if(mainState.open) loadMainModels()">expand_more</span>
+                </div>
+                <div class="combo-panel" x-show="mainState.open && (mainState.models.length || mainState.loading)">
+                  <template x-for="m in comboFilter(mainState.models, mainState.model)" :key="m">
+                    <div class="combo-opt" :class="{selected: m===mainState.model}" @click="mainState.model=m; mainState.open=false">
+                      <span x-text="m"></span>
+                      <span class="icon" x-show="m===mainState.model">check</span>
+                    </div>
+                  </template>
+                  <div class="combo-empty" x-show="comboFilter(mainState.models, mainState.model).length===0 && mainState.loading">Loading models…</div>
+                  <div class="combo-empty" x-show="comboFilter(mainState.models, mainState.model).length===0 && !mainState.loading">No models — type your own</div>
+                  <div class="combo-src" x-show="mainState.models.length>0">
+                    <span class="chip" :class="mainState.source==='live' ? 'green':'dim'" x-text="mainState.source==='live' ? 'live' : 'curated'"></span>
+                    <span x-text="mainState.models.length + ' models'"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="field-gap" style="display:flex;align-items:center;gap:10px;">
+            <button class="btn primary" @click="saveMainModel()" :disabled="saving || !mainState.providerKey || !mainState.model">
+              <span class="icon">save</span> Save Main Model
+            </button>
+            <span class="hint" style="margin:0;">Saves &amp; restarts the gateway</span>
+          </div>
+        </div>
+
+        <!-- Auxiliary tasks -->
+        <div class="section-label">
+          <span class="icon" style="font-size:14px;">settings_suggest</span>
+          Auxiliary Tasks
+          <span class="req-note" style="color:var(--text-faint);">— optional</span>
+        </div>
+        <template x-for="g in ['core','system','voice','automation']" :key="g">
+          <div x-show="auxTasks.filter(t=>t.group===g).length>0">
+            <div class="section-label" style="margin-top:8px;" x-text="g==='core' ? 'Core' : g==='system' ? 'System' : g==='voice' ? 'Voice' : 'Automation'"></div>
+            <div class="card" style="padding:0 18px;">
+              <template x-for="(t,i) in auxTasks.filter(tk=>tk.group===g)" :key="t.key">
+                <div :style="i < auxTasks.filter(tk=>tk.group===g).length-1 ? 'border-bottom:1px solid var(--border-soft);' : ''">
+                  <div style="display:flex;align-items:center;gap:12px;padding:14px 0;">
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13.5px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+                        <span x-text="t.label"></span>
+                        <span class="chip dim" x-show="auxState[t.key] && auxState[t.key].provider" x-text="auxState[t.key].provider"></span>
+                      </div>
+                      <div class="hint" style="margin-top:3px;" x-text="t.desc"></div>
+                    </div>
+                    <button class="btn sm danger" @click="resetAux(t.key)" title="Reset to auto defaults">
+                      <span class="icon">restore</span>
+                    </button>
+                  </div>
+                  <div class="toggle-body" style="border-bottom:none;padding:0 0 16px;">
+                    <div class="field-grid-2">
+                      <div>
+                        <label class="field-label">Provider</label>
+                        <select x-model="auxState[t.key].provider"
+                                @change="auxState[t.key].provider=$event.target.value; auxState[t.key].model=''; auxState[t.key].models=[]">
+                          <option value="auto">Auto (default)</option>
+                          <template x-for="p in auxProviders" :key="p.key">
+                            <option :value="p.hermes_id" x-text="p.label" :disabled="!p.configured"></option>
+                          </template>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="field-label">Model</label>
+                        <div class="combo" @click.outside="auxState[t.key].open=false">
+                          <div class="combo-input">
+                            <span class="icon">search</span>
+                            <input type="text"
+                                   :value="auxState[t.key].model"
+                                   @focus="auxState[t.key].open=true; loadAuxModels(t.key)"
+                                   @input="auxState[t.key].model=$event.target.value; auxState[t.key].open=true"
+                                   placeholder="Type or pick a model">
+                            <span class="icon combo-caret" :class="{open: auxState[t.key].open}" @click="auxState[t.key].open=!auxState[t.key].open; if(auxState[t.key].open) loadAuxModels(t.key)">expand_more</span>
+                          </div>
+                          <div class="combo-panel" x-show="auxState[t.key].open && (auxState[t.key].models.length || auxState[t.key].loading)">
+                            <template x-for="m in comboFilter(auxState[t.key].models || [], auxState[t.key].model)" :key="m">
+                              <div class="combo-opt" :class="{selected: m===auxState[t.key].model}" @click="auxState[t.key].model=m; auxState[t.key].open=false">
+                                <span x-text="m"></span>
+                                <span class="icon" x-show="m===auxState[t.key].model">check</span>
+                              </div>
+                            </template>
+                            <div class="combo-empty" x-show="comboFilter(auxState[t.key].models || [], auxState[t.key].model).length===0 && auxState[t.key].loading">Loading models…</div>
+                            <div class="combo-empty" x-show="comboFilter(auxState[t.key].models || [], auxState[t.key].model).length===0 && !auxState[t.key].loading">No models — type your own</div>
+                            <div class="combo-src" x-show="auxState[t.key].models.length>0">
+                              <span class="chip" :class="auxState[t.key].source==='live' ? 'green':'dim'" x-text="auxState[t.key].source==='live' ? 'live' : 'curated'"></span>
+                              <span x-text="auxState[t.key].models.length + ' models'"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="field-grid-2 field-gap">
+                      <div>
+                        <label class="field-label">Reasoning Effort</label>
+                        <select x-model="auxState[t.key].reasoning">
+                          <option value="">Default</option>
+                          <option value="none">none</option>
+                          <option value="minimal">minimal</option>
+                          <option value="low">low</option>
+                          <option value="medium">medium</option>
+                          <option value="high">high</option>
+                          <option value="xhigh">xhigh</option>
+                          <option value="max">max</option>
+                          <option value="ultra">ultra</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="field-label">Timeout (seconds)</label>
+                        <input type="text" :value="auxState[t.key].timeout" @input="auxState[t.key].timeout=$event.target.value" placeholder="e.g. 120">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+      </div>
+      <div class="save-bar">
+        <label class="save-bar-check">
+          <input type="checkbox" x-model="restartOnSave"> Restart gateway after save
+        </label>
+        <button class="btn primary" @click="saveAuxConfig()" :disabled="saving">
+          <span class="icon">save</span> Save Auxiliary Config
+        </button>
       </div>
     </div>
 
@@ -1666,6 +1883,10 @@ function app() {
     approved: [],
     snapshots: [],
     backupBusy: false,
+    mainState: { providerKey: '', model: '', open: false, models: [], loading: false, source: 'curated' },
+    auxTasks: [],
+    auxProviders: [],
+    auxState: {},
     restoreBusy: false,
     restoreFile: null,
     restoreDragging: false,
@@ -1852,7 +2073,7 @@ function app() {
       // setup form — and on the Backup page that looks like the restore blew up.
       ['dragover','drop'].forEach(evt =>
         window.addEventListener(evt, e => { e.preventDefault(); }, false));
-      await Promise.all([this.loadConfig(), this.loadStatus(), this.loadLogs(), this.loadPairing(), this.loadSnapshots()]);
+      await Promise.all([this.loadConfig(), this.loadStatus(), this.loadLogs(), this.loadPairing(), this.loadSnapshots(), this.loadAux()]);
       setInterval(() => this.loadStatus(),  5000);
       setInterval(() => this.loadLogs(),    3000);
       setInterval(() => this.loadPairing(), 5000);
@@ -2079,6 +2300,122 @@ function app() {
       if (res && res.ok) {
         this._restoreResultTimer = setTimeout(() => { this.restoreResult = null; }, 6000);
       }
+    },
+
+    comboFilter(list, q) {
+      const s = (q || '').trim().toLowerCase();
+      if (!s) return list || [];
+      return (list || []).filter(m => String(m).toLowerCase().includes(s));
+    },
+
+    async fetchModels(providerKey) {
+      try {
+        const r = await fetch('/setup/api/models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider_key: providerKey }),
+        });
+        if (!r.ok) return { models: [], source: 'curated' };
+        return await r.json();
+      } catch { return { models: [], source: 'curated' }; }
+    },
+
+    async loadMainModels() {
+      if (!this.mainState.providerKey || this.mainState.models.length || this.mainState.loading) return;
+      this.mainState.loading = true;
+      const d = await this.fetchModels(this.mainState.providerKey);
+      this.mainState.models = d.models || [];
+      this.mainState.source = d.source || 'curated';
+      this.mainState.loading = false;
+    },
+
+    async loadAuxModels(task) {
+      const st = this.auxState[task];
+      if (!st || !st.provider || st.provider === 'auto') return;
+      if (st.models.length || st.loading) return;
+      const p = this.auxProviders.find(x => x.hermes_id === st.provider);
+      if (!p) return;
+      st.loading = true;
+      const d = await this.fetchModels(p.key);
+      st.models = d.models || [];
+      st.source = d.source || 'curated';
+      st.loading = false;
+    },
+
+    async loadAux() {
+      try {
+        const r = await fetch('/setup/api/aux');
+        if (r.ok) {
+          const d = await r.json();
+          this.auxProviders = d.providers || [];
+          this.auxTasks = d.tasks || [];
+          const st = {};
+          for (const t of this.auxTasks) {
+            const cur = (d.aux || {})[t.key] || {};
+            st[t.key] = {
+              provider: cur.provider || 'auto',
+              model: cur.model || '',
+              reasoning: cur.reasoning_effort || '',
+              timeout: cur.timeout != null ? String(cur.timeout) : '',
+              models: [], source: 'curated', open: false, loading: false,
+            };
+          }
+          this.auxState = st;
+        }
+      } catch {}
+    },
+
+    async saveMainModel() {
+      const cp = this.configuredProviders.find(c => c.key === this.mainState.providerKey);
+      if (!cp) return this.notify('Pick a configured provider', false);
+      if (!this.mainState.model) return this.notify('Enter a model name', false);
+      this.saving = true;
+      const vars = { ...this.vars, LLM_MODEL: this.mainState.model };
+      if (cp.modelKey) vars[cp.modelKey] = this.mainState.model;
+      try {
+        const r = await fetch('/setup/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vars, _restart: this.restartOnSave, _active_provider_key: this.mainState.providerKey }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) {
+          this.notify(d.warning ? `Saved, but: ${d.warning}` : 'Main model saved', !d.warning);
+          await this.loadConfig();
+        } else this.notify(d.error || 'Save failed', false);
+      } catch (e) { this.notify('Save failed: ' + e.message, false); }
+      this.saving = false;
+    },
+
+    async saveAuxConfig() {
+      this.saving = true;
+      const aux = {};
+      for (const t of this.auxTasks) {
+        const st = this.auxState[t.key];
+        const v = {};
+        if (st.provider && st.provider !== 'auto') v.provider = st.provider;
+        if (st.model) v.model = st.model;
+        if (st.reasoning) v.reasoning_effort = st.reasoning;
+        const to = st.timeout !== '' ? Number(st.timeout) : 0;
+        if (to > 0) v.timeout = to;
+        aux[t.key] = Object.keys(v).length ? v : null;
+      }
+      try {
+        const r = await fetch('/setup/api/aux', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ aux, _restart: this.restartOnSave }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) { this.notify('Auxiliary config saved', true); await this.loadAux(); }
+        else this.notify(d.error || 'Save failed', false);
+      } catch (e) { this.notify('Save failed: ' + e.message, false); }
+      this.saving = false;
+    },
+
+    resetAux(task) {
+      this.auxState[task] = { provider: 'auto', model: '', reasoning: '', timeout: '', open: false, models: [], source: 'curated', loading: false };
+      this.notify(task + ' reset to defaults — press Save', true);
     },
 
     fmtBytes(n) {

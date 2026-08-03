@@ -361,6 +361,194 @@ CHANNEL_MAP  = {
     "Matrix":      "MATRIX_ACCESS_TOKEN",
 }
 
+# ── Models & auxiliary tasks ─────────────────────────────────────────────────
+# Auxiliary task registry — mirrors config.yaml's auxiliary.* block
+# (hermes_cli/config.py). Group is only for UI ordering.
+AUX_TASKS = [
+    ("vision",              "Vision",              "Image analysis",                    "core"),
+    ("web_extract",         "Web Extract",         "LLM summarization of pages",        "core"),
+    ("compression",         "Compression",         "Context summary near token limit",  "core"),
+    ("title_generation",    "Title Generation",    "Session titles",                    "core"),
+    ("memory_query_rewrite","Memory Query Rewrite","Memory query rewriting",            "core"),
+    ("approval",            "Approval",            "Smart command-approval judge",      "system"),
+    ("mcp",                 "MCP",                 "Side-LLM for MCP servers",          "system"),
+    ("skills_hub",          "Skills Hub",          "Skill search",                      "system"),
+    ("tts_audio_tags",      "TTS Audio Tags",      "Voice metadata tags",               "voice"),
+    ("triage_specifier",    "Triage Specifier",    "Inbox triage",                      "automation"),
+    ("kanban_decomposer",   "Kanban Decomposer",   "Kanban task decomposition",         "automation"),
+    ("profile_describer",   "Profile Describer",   "Profile summaries",                 "automation"),
+    ("goal_judge",          "Goal Judge",          "Standing-goal progress judging",    "automation"),
+    ("curator",             "Curator",             "Skill curation review",             "automation"),
+    ("monitor",             "Monitor",             "Background monitoring",             "automation"),
+]
+
+# (url, auth) per provider key for model-list fetches. auth:
+#   none        — public endpoint
+#   bearer      — Authorization: Bearer <key>
+#   x-api-key   — x-api-key + anthropic-version headers
+#   url         — url contains {key} placeholder
+#   custom_base — base_url from CUSTOM_STYLE_BASE_URLS or CUSTOM_PROVIDER_BASE_URL + /models
+#   hf          — HuggingFace Hub search API
+MODEL_LIST_URLS = {
+    "OPENROUTER_API_KEY":  ("https://openrouter.ai/api/v1/models",          "none"),
+    "ANTHROPIC_API_KEY":   ("https://api.anthropic.com/v1/models",          "x-api-key"),
+    "GEMINI_API_KEY":      ("https://generativelanguage.googleapis.com/v1beta/models?key={key}", "url"),
+    "DEEPSEEK_API_KEY":    ("https://api.deepseek.com/v1/models",           "bearer"),
+    "DASHSCOPE_API_KEY":   ("https://dashscope.aliyuncs.com/compatible-mode/v1/models", "bearer"),
+    "GLM_API_KEY":         ("https://open.bigmodel.cn/api/paas/v4/models",  "bearer"),
+    "KIMI_API_KEY":        ("https://api.moonshot.cn/v1/models",            "bearer"),
+    "MINIMAX_API_KEY":     ("https://api.minimax.io/v1/text/chatcompletion_v2/models", "bearer"),
+    "MINIMAX_CN_API_KEY":  ("https://api.minimaxi.com/v1/text/chatcompletion_v2/models", "bearer"),
+    "HF_TOKEN":            ("https://huggingface.co/api/models",            "hf"),
+    "NVIDIA_API_KEY":      ("https://integrate.api.nvidia.com/v1/models",   "bearer"),
+    "XAI_API_KEY":         ("https://api.x.ai/v1/models",                   "bearer"),
+    "STEPFUN_API_KEY":     ("https://api.stepfun.com/v1/models",            "bearer"),
+    "ARCEEAI_API_KEY":     ("https://api.arcee.ai/v1/models",               "bearer"),
+    "FIREWORKS_API_KEY":   ("",                                             "custom_base"),
+    "NOVITA_API_KEY":      ("",                                             "custom_base"),
+    "AZURE_FOUNDRY_API_KEY":("",                                            "azure_base"),
+    "CUSTOM_PROVIDER_API_KEY":("",                                          "custom_base"),
+    "OLLAMA_API_KEY":      ("https://ollama.com/v1/models",                 "bearer"),
+}
+
+# Offline fallback suggestions when the live endpoint is missing/fails.
+CURATED_MODELS = {
+    "ANTHROPIC_API_KEY": ["claude-sonnet-4-5", "claude-opus-4-1", "claude-sonnet-4-20250514", "claude-opus-4-20250115", "claude-haiku-4-5"],
+    "GEMINI_API_KEY": ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    "DEEPSEEK_API_KEY": ["deepseek-chat", "deepseek-reasoner"],
+    "DASHSCOPE_API_KEY": ["qwen-max", "qwen-plus", "qwen-turbo", "qwen3-max", "qwen3-plus"],
+    "GLM_API_KEY": ["glm-4.6", "glm-4.5", "glm-4-plus", "glm-4-air"],
+    "KIMI_API_KEY": ["kimi-k2-0711-preview", "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
+    "MINIMAX_API_KEY": ["MiniMax-M3", "MiniMax-M2.7", "MiniMax-Text-01"],
+    "MINIMAX_CN_API_KEY": ["MiniMax-M3", "MiniMax-M2.7", "MiniMax-Text-01"],
+    "HF_TOKEN": ["meta-llama/Llama-3.3-70B-Instruct", "Qwen/Qwen2.5-72B-Instruct", "mistralai/Mistral-7B-Instruct-v0.3"],
+    "NVIDIA_API_KEY": ["nvidia/llama-3.3-nemotron-super-49b-v1", "nvidia/deepseek-r1-0528", "meta/llama-3.1-405b-instruct", "google/gemma-2-27b-it", "deepseek-ai/deepseek-v3-671b"],
+    "XAI_API_KEY": ["grok-4.3", "grok-4.20-0309-reasoning", "grok-3.5", "grok-3-mini"],
+    "STEPFUN_API_KEY": ["step-2-16k", "step-1-32k", "step-1-8k"],
+    "ARCEEAI_API_KEY": ["arcee-4-mini", "arcee-4", "aries-mini"],
+    "FIREWORKS_API_KEY": ["accounts/fireworks/models/llama-v3p1-70b-instruct", "accounts/fireworks/models/deepseek-v3", "accounts/fireworks/models/qwen3-32b"],
+    "NOVITA_API_KEY": ["deepseek/deepseek-v3-250324", "deepseek/deepseek-r1-0528", "meta-llama/llama-3.3-70b-instruct"],
+    "OLLAMA_API_KEY": ["llama3.3", "qwen2.5", "deepseek-r1", "mistral"],
+    "COPILOT_GITHUB_TOKEN": ["gpt-4.1", "gpt-4o", "gpt-4o-mini", "claude-sonnet-4"],
+    "OPENCODE_ZEN_API_KEY": ["kimi-k2.5", "deepseek-chat", "qwen3-coder"],
+    "OPENCODE_GO_API_KEY": ["open-code/go-1.5", "open-code/go-1.5-mini"],
+    "KILOCODE_API_KEY": ["kilocode/claude-sonnet-4", "kilocode/gpt-5", "kilocode/deepseek-v4"],
+    "GMI_API_KEY": ["gmi/gpt-5", "gmi/claude-sonnet-4"],
+}
+
+
+async def _fetch_model_list(provider_key: str) -> tuple[list[str], str]:
+    """Fetch model ids from the provider's list endpoint.
+
+    Returns (models, source) where source is "live" when the endpoint
+    answered, "curated" for the offline fallback list.
+    """
+    env = read_env(ENV_FILE)
+    curated = CURATED_MODELS.get(provider_key, [])
+    spec = MODEL_LIST_URLS.get(provider_key)
+    if not spec:
+        return curated, "curated"
+    url, auth = spec
+    headers = {}
+    if auth == "custom_base":
+        base = (CUSTOM_STYLE_BASE_URLS.get(provider_key) or env.get("CUSTOM_PROVIDER_BASE_URL", "")).rstrip("/")
+        key = env.get(provider_key, "")
+        if not base or not key:
+            return curated, "curated"
+        url, headers["Authorization"] = f"{base}/models", f"Bearer {key}"
+    elif auth == "azure_base":
+        base = env.get("AZURE_FOUNDRY_BASE_URL", "").rstrip("/")
+        key = env.get("AZURE_FOUNDRY_API_KEY", "")
+        if not base or not key:
+            return curated, "curated"
+        url, headers["Authorization"] = f"{base}/models", f"Bearer {key}"
+    elif auth == "bearer":
+        key = env.get(provider_key, "")
+        if not key:
+            return curated, "curated"
+        headers["Authorization"] = f"Bearer {key}"
+    elif auth == "x-api-key":
+        key = env.get(provider_key, "")
+        if not key:
+            return curated, "curated"
+        headers["x-api-key"] = key
+        headers["anthropic-version"] = "2023-06-01"
+    elif auth == "url":
+        key = env.get(provider_key, "")
+        if not key:
+            return curated, "curated"
+        url = url.format(key=key)
+    try:
+        resp = await get_http_client().get(url, headers=headers, timeout=httpx.Timeout(15.0))
+        if resp.status_code != 200:
+            return curated, "curated"
+        data = resp.json()
+    except Exception:
+        return curated, "curated"
+    ids: list[str] = []
+    if isinstance(data, dict):
+        items = data.get("data")
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict) and item.get("id"):
+                    ids.append(str(item["id"]))
+        elif auth == "hf" and isinstance(items, list):
+            pass
+    if not ids and auth == "hf" and isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and item.get("id"):
+                ids.append(str(item["id"]))
+    return (ids or curated), ("live" if ids else "curated")
+
+
+def read_aux_config() -> dict:
+    import yaml
+    p = Path(HERMES_HOME) / "config.yaml"
+    if not p.exists():
+        return {}
+    try:
+        cfg = yaml.safe_load(p.read_text()) or {}
+        aux = cfg.get("auxiliary")
+        return aux if isinstance(aux, dict) else {}
+    except Exception:
+        return {}
+
+
+def write_aux_config(updates: dict) -> None:
+    import yaml
+    p = Path(HERMES_HOME) / "config.yaml"
+    cfg: dict = {}
+    if p.exists():
+        try:
+            loaded = yaml.safe_load(p.read_text()) or {}
+            if isinstance(loaded, dict):
+                cfg = loaded
+        except Exception:
+            pass
+    aux = cfg.get("auxiliary")
+    if not isinstance(aux, dict):
+        aux = {}
+    for task, vals in updates.items():
+        if vals is None:
+            aux.pop(task, None)
+            continue
+        if not isinstance(vals, dict):
+            continue
+        cur = aux.get(task)
+        if not isinstance(cur, dict):
+            cur = {}
+        for k in ("provider", "model", "base_url", "api_key", "timeout", "reasoning_effort"):
+            if k in vals and vals[k] not in (None, ""):
+                cur[k] = vals[k]
+            elif k in cur:
+                cur.pop(k, None)
+        if cur:
+            aux[task] = cur
+        else:
+            aux.pop(task, None)
+    cfg["auxiliary"] = aux
+    p.write_text(yaml.safe_dump(cfg, sort_keys=False, default_flow_style=False))
+
 
 # ── .env helpers ──────────────────────────────────────────────────────────────
 def read_env(path: Path) -> dict[str, str]:
@@ -1525,6 +1713,54 @@ async def api_config_put(request: Request):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+async def api_models_fetch(request: Request):
+    if err := guard(request): return err
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON"}, status_code=400)
+    pk = str(body.get("provider_key", "")).strip()
+    if not pk:
+        return JSONResponse({"error": "provider_key required"}, status_code=400)
+    models, source = await _fetch_model_list(pk)
+    return JSONResponse({"provider_key": pk, "models": models, "source": source})
+
+
+async def api_aux_get(request: Request):
+    if err := guard(request): return err
+    env = read_env(ENV_FILE)
+    providers = []
+    for key, _, _, _ in ENV_VARS:
+        if key not in PROVIDER_KEYS:
+            continue
+        providers.append({
+            "key": key,
+            "label": ENV_LABELS.get(key, key),
+            "hermes_id": HERMES_PROVIDER_IDS.get(key, ""),
+            "configured": bool(env.get(key)),
+        })
+    return JSONResponse({"tasks": AUX_TASKS, "aux": read_aux_config(),
+                         "providers": providers})
+
+
+async def api_aux_put(request: Request):
+    if err := guard(request): return err
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON"}, status_code=400)
+    updates = body.get("aux")
+    if not isinstance(updates, dict):
+        return JSONResponse({"error": "aux object required"}, status_code=400)
+    async with cfg_lock:
+        write_aux_config(updates)
+    restart = bool(body.get("_restart"))
+    if restart:
+        asyncio.create_task(gw.restart())
+        asyncio.create_task(dash.restart())
+    return JSONResponse({"ok": True, "restarting": restart})
+
+
 async def api_status(request: Request):
     if err := guard(request): return err
     data = read_env(ENV_FILE)
@@ -2374,6 +2610,9 @@ routes = [
     Route("/setup/api/gateway/stop",            api_gw_stop,         methods=["POST"]),
     Route("/setup/api/gateway/restart",         api_gw_restart,      methods=["POST"]),
     Route("/setup/api/config/reset",            api_config_reset,    methods=["POST"]),
+    Route("/setup/api/models",                  api_models_fetch,    methods=["POST"]),
+    Route("/setup/api/aux",                     api_aux_get),
+    Route("/setup/api/aux",                     api_aux_put,         methods=["PUT"]),
     Route("/setup/api/pairing/pending",         api_pairing_pending),
     Route("/setup/api/pairing/approve",         api_pairing_approve, methods=["POST"]),
     Route("/setup/api/pairing/deny",            api_pairing_deny,    methods=["POST"]),
